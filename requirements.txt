@@ -1,0 +1,18 @@
+selenium>=4.15.0
+webdriver-manager>=4.0.0
+requests>=2.31.0
+
+# Database
+sqlalchemy>=2.0.0
+
+# FastAPI
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+
+# Data processing
+pandas>=2.0.0
+
+
+
+
