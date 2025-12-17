@@ -40,13 +40,28 @@ interface PropertiesResponse {
   totalPages: number
 }
 
-const fetchProperties = async (address: string): Promise<PropertiesResponse> => {
-  if (!address.trim()) {
+const fetchProperties = async (
+  address?: string,
+  city?: string,
+  state?: string
+): Promise<PropertiesResponse> => {
+  if (!address && !city) {
     return { properties: [], total: 0, page: 1, pageSize: 20, hasMore: false, totalPages: 0 }
   }
 
+  const params = new URLSearchParams()
+  if (address) {
+    params.set('address', address)
+  }
+  if (city) {
+    params.set('city', city)
+  }
+  if (state) {
+    params.set('state', state)
+  }
+
   const response = await fetch(
-    `${API_URL}/api/properties?address=${encodeURIComponent(address)}`
+    `${API_URL}/api/properties?${params.toString()}`
   )
   
   if (!response.ok) {
@@ -60,14 +75,18 @@ export default function ResultsPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const address = searchParams.get('address') || ''
+  const city = searchParams.get('city') || ''
+  const state = searchParams.get('state') || ''
 
   const { data, isLoading, error } = useQuery<PropertiesResponse>({
-    queryKey: ['properties', 'address', address],
-    queryFn: () => fetchProperties(address),
-    enabled: address.length > 0,
+    queryKey: ['properties', address, city, state],
+    queryFn: () => fetchProperties(address || undefined, city || undefined, state || undefined),
+    enabled: address.length > 0 || city.length > 0,
   })
 
-  const [searchQuery, setSearchQuery] = useState(address)
+  const [searchQuery, setSearchQuery] = useState(
+    address || (city ? `${city}${state ? `, ${state}` : ''}` : '')
+  )
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -107,20 +126,20 @@ export default function ResultsPage() {
 
       {/* Results */}
       <div className="flex-1 max-w-7xl mx-auto w-full px-4 py-8">
-        {address ? (
+        {address || city ? (
           <PropertyResults
             data={data ? {
               ...data,
-              query: address
+              query: address || (city ? `${city}${state ? `, ${state}` : ''}` : '')
             } : undefined}
             isLoading={isLoading}
             error={error}
-            searchQuery={address}
+            searchQuery={address || (city ? `${city}${state ? `, ${state}` : ''}` : '')}
           />
         ) : (
           <div className="text-center py-12">
             <p className="text-gray-600 dark:text-gray-400">
-              Enter an address to search for properties
+              Enter an address or city to search for properties
             </p>
           </div>
         )}

@@ -1,6 +1,22 @@
 'use client'
 
-import { FormEvent } from 'react'
+import { useState, useEffect, useRef, FormEvent } from 'react'
+import { useRouter } from 'next/navigation'
+
+interface Suggestion {
+  type: 'address' | 'city'
+  value: string
+  city: string
+  state: string
+  propertyId?: string
+  count?: number
+  display: string
+  relevance?: string
+}
+
+interface AutocompleteResponse {
+  suggestions: Suggestion[]
+}
 
 interface PropertySearchProps {
   searchQuery: string
@@ -9,12 +25,128 @@ interface PropertySearchProps {
   isLoading: boolean
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
 export default function PropertySearch({
   searchQuery,
   setSearchQuery,
   onSearch,
   isLoading,
 }: PropertySearchProps) {
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [selectedIndex, setSelectedIndex] = useState(-1)
+  const [isFetching, setIsFetching] = useState(false)
+  const router = useRouter()
+  const inputRef = useRef<HTMLInputElement>(null)
+  const suggestionsRef = useRef<HTMLDivElement>(null)
+
+  // Debounced autocomplete fetch
+  useEffect(() => {
+    if (searchQuery.length < 2) {
+      setSuggestions([])
+      setShowSuggestions(false)
+      setIsFetching(false)
+      return
+    }
+
+    setIsFetching(true)
+    const timeoutId = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `${API_URL}/api/autocomplete?q=${encodeURIComponent(searchQuery)}&limit=8`
+        )
+        if (response.ok) {
+          const data: AutocompleteResponse = await response.json()
+          setSuggestions(data.suggestions)
+          setShowSuggestions(data.suggestions.length > 0)
+        } else {
+          setSuggestions([])
+          setShowSuggestions(false)
+        }
+      } catch (error) {
+        console.error('Autocomplete error:', error)
+        setSuggestions([])
+        setShowSuggestions(false)
+      } finally {
+        setIsFetching(false)
+      }
+    }, 300) // 300ms debounce
+
+    return () => {
+      clearTimeout(timeoutId)
+      setIsFetching(false)
+    }
+  }, [searchQuery])
+
+  const handleSuggestionClick = (suggestion: Suggestion) => {
+    if (suggestion.type === 'address') {
+      // Navigate to results page with address
+      router.push(`/results?address=${encodeURIComponent(suggestion.value)}`)
+    } else if (suggestion.type === 'city') {
+      // Navigate to results page with city
+      const params = new URLSearchParams()
+      params.set('city', suggestion.city)
+      if (suggestion.state) {
+        params.set('state', suggestion.state)
+      }
+      router.push(`/results?${params.toString()}`)
+    }
+    setShowSuggestions(false)
+    setSearchQuery(suggestion.value)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || suggestions.length === 0) {
+      if (e.key === 'Enter') {
+        onSearch(e as any)
+      }
+      return
+    }
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault()
+        setSelectedIndex((prev) => 
+          prev < suggestions.length - 1 ? prev + 1 : prev
+        )
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1))
+        break
+      case 'Enter':
+        e.preventDefault()
+        if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
+          handleSuggestionClick(suggestions[selectedIndex])
+        } else {
+          onSearch(e as any)
+        }
+        break
+      case 'Escape':
+        setShowSuggestions(false)
+        setSelectedIndex(-1)
+        break
+    }
+  }
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target as Node) &&
+        inputRef.current &&
+        !inputRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   return (
     <form onSubmit={onSearch} className="w-full">
       <div className="relative">
@@ -33,19 +165,107 @@ export default function PropertySearch({
             />
           </svg>
           <input
+            ref={inputRef}
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+              setSelectedIndex(-1)
+            }}
+            onFocus={() => {
+              if (suggestions.length > 0) setShowSuggestions(true)
+            }}
+            onKeyDown={handleKeyDown}
             placeholder="Enter property address or city"
             className="flex-1 outline-none bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 text-lg"
             disabled={isLoading}
+            aria-label="Property search with autocomplete"
+            aria-autocomplete="list"
+            aria-expanded={showSuggestions}
+            aria-controls="suggestions-list"
           />
-          {isLoading && (
+          {(isLoading || isFetching) && (
             <div className="ml-4">
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-400"></div>
             </div>
           )}
         </div>
+
+        {/* Autocomplete Suggestions */}
+        {showSuggestions && suggestions.length > 0 && (
+          <div
+            ref={suggestionsRef}
+            id="suggestions-list"
+            className="absolute z-50 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl max-h-96 overflow-y-auto"
+            role="listbox"
+          >
+            {suggestions.map((suggestion, index) => (
+              <button
+                key={`${suggestion.type}-${suggestion.value}-${index}`}
+                type="button"
+                onClick={() => handleSuggestionClick(suggestion)}
+                onMouseEnter={() => setSelectedIndex(index)}
+                className={`w-full text-left px-6 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                  selectedIndex === index
+                    ? 'bg-gray-100 dark:bg-gray-700'
+                    : ''
+                } ${
+                  index === 0 ? 'rounded-t-lg' : ''
+                } ${
+                  index === suggestions.length - 1 ? 'rounded-b-lg' : 'border-b border-gray-200 dark:border-gray-700'
+                }`}
+                role="option"
+                aria-selected={selectedIndex === index}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {suggestion.type === 'address' ? (
+                      <svg
+                        className="w-5 h-5 text-gray-400 flex-shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="w-5 h-5 text-gray-400 flex-shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    )}
+                    <span className="text-gray-900 dark:text-gray-100">
+                      {suggestion.display}
+                    </span>
+                  </div>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">
+                    {suggestion.type === 'address' ? 'Property' : 'City'}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </form>
   )
