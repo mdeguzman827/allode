@@ -36,7 +36,7 @@ export default function PropertySearch({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Enter property address"
+            placeholder="Enter property address or city"
             className="flex-1 outline-none bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 text-lg"
             disabled={isLoading}
           />
