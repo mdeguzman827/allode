@@ -349,24 +349,24 @@ async def autocomplete(
         raise HTTPException(status_code=500, detail=f"Error fetching autocomplete: {str(e)}")
 
 
-# @app.get("/api/properties/{property_id}")
-# async def get_property_by_id(
-#     property_id: str,
-#     db: Session = Depends(get_db)
-# ):
-#     """Get a single property by ID"""
-#     try:
-#         property_obj = db.query(Property).filter_by(id=property_id).first()
+@app.get("/api/properties/{property_id}")
+async def get_property_by_id(
+    property_id: str,
+    db: Session = Depends(get_db)
+):
+    """Get a single property by ID"""
+    try:
+        property_obj = db.query(Property).filter_by(id=property_id).first()
         
-#         if not property_obj:
-#             raise HTTPException(status_code=404, detail="Property not found")
+        if not property_obj:
+            raise HTTPException(status_code=404, detail="Property not found")
         
-#         return transform_for_frontend(property_obj)
+        return transform_for_frontend(property_obj)
     
-#     except HTTPException:
-#         raise
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=f"Error fetching property: {str(e)}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching property: {str(e)}")
 
 
 # @app.get("/api/properties/search")

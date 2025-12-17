@@ -80,9 +80,9 @@ export default function PropertySearch({
   }, [searchQuery])
 
   const handleSuggestionClick = (suggestion: Suggestion) => {
-    if (suggestion.type === 'address') {
-      // Navigate to results page with address
-      router.push(`/results?address=${encodeURIComponent(suggestion.value)}`)
+    if (suggestion.type === 'address' && suggestion.propertyId) {
+      // Navigate directly to property detail page
+      router.push(`/property/${suggestion.propertyId}`)
     } else if (suggestion.type === 'city') {
       // Navigate to results page with city
       const params = new URLSearchParams()
