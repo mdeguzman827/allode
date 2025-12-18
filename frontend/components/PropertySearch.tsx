@@ -4,11 +4,12 @@ import { useState, useEffect, useRef, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface Suggestion {
-  type: 'address' | 'city'
+  type: 'address' | 'city' | 'zipcode'
   value: string
   city: string
   state: string
   propertyId?: string
+  zipCode?: string
   count?: number
   display: string
   relevance?: string
@@ -37,13 +38,14 @@ export default function PropertySearch({
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const [isFetching, setIsFetching] = useState(false)
+  const [isUserTyping, setIsUserTyping] = useState(false)
   const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
 
-  // Debounced autocomplete fetch
+  // Debounced autocomplete fetch - only when user is actively typing
   useEffect(() => {
-    if (searchQuery.length < 2) {
+    if (!isUserTyping || searchQuery.length < 2) {
       setSuggestions([])
       setShowSuggestions(false)
       setIsFetching(false)
@@ -77,9 +79,14 @@ export default function PropertySearch({
       clearTimeout(timeoutId)
       setIsFetching(false)
     }
-  }, [searchQuery])
+  }, [searchQuery, isUserTyping])
 
   const handleSuggestionClick = (suggestion: Suggestion) => {
+    setIsUserTyping(false)
+    setShowSuggestions(false)
+    setSuggestions([])
+    setSearchQuery(suggestion.value)
+    
     if (suggestion.type === 'address' && suggestion.propertyId) {
       // Navigate directly to property detail page
       router.push(`/property/${suggestion.propertyId}`)
@@ -91,14 +98,18 @@ export default function PropertySearch({
         params.set('state', suggestion.state)
       }
       router.push(`/results?${params.toString()}`)
+    } else if (suggestion.type === 'zipcode' && suggestion.zipCode) {
+      // Navigate to results page with zip code
+      router.push(`/results?zipcode=${encodeURIComponent(suggestion.zipCode)}`)
     }
-    setShowSuggestions(false)
-    setSearchQuery(suggestion.value)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!showSuggestions || suggestions.length === 0) {
       if (e.key === 'Enter') {
+        setIsUserTyping(false)
+        setShowSuggestions(false)
+        setSuggestions([])
         onSearch(e as any)
       }
       return
@@ -117,6 +128,9 @@ export default function PropertySearch({
         break
       case 'Enter':
         e.preventDefault()
+        setIsUserTyping(false)
+        setShowSuggestions(false)
+        setSuggestions([])
         if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
           handleSuggestionClick(suggestions[selectedIndex])
         } else {
@@ -169,11 +183,12 @@ export default function PropertySearch({
             type="text"
             value={searchQuery}
             onChange={(e) => {
+              setIsUserTyping(true)
               setSearchQuery(e.target.value)
               setSelectedIndex(-1)
             }}
             onFocus={() => {
-              if (suggestions.length > 0) setShowSuggestions(true)
+              if (suggestions.length > 0 && isUserTyping) setShowSuggestions(true)
             }}
             onKeyDown={handleKeyDown}
             placeholder="Enter property address or city"
@@ -239,6 +254,20 @@ export default function PropertySearch({
                           d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                         />
                       </svg>
+                    ) : suggestion.type === 'zipcode' ? (
+                      <svg
+                        className="w-5 h-5 text-gray-400 flex-shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                        />
+                      </svg>
                     ) : (
                       <svg
                         className="w-5 h-5 text-gray-400 flex-shrink-0"
@@ -259,7 +288,7 @@ export default function PropertySearch({
                     </span>
                   </div>
                   <span className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">
-                    {suggestion.type === 'address' ? 'Property' : 'City'}
+                    {suggestion.type === 'address' ? 'Property' : suggestion.type === 'zipcode' ? 'Zip Code' : 'City'}
                   </span>
                 </div>
               </button>

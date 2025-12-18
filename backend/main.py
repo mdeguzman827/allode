@@ -62,6 +62,7 @@ async def get_properties(
     listing_id: Optional[str] = Query(None, description="Filter by listing ID"),
     city: Optional[str] = Query(None, description="Filter by city"),
     state: Optional[str] = Query(None, description="Filter by state"),
+    zipcode: Optional[str] = Query(None, description="Filter by zip code"),
     # min_price: Optional[int] = Query(None, ge=0, description="Minimum price"),
     # max_price: Optional[int] = Query(None, ge=0, description="Maximum price"),
     # bedrooms: Optional[int] = Query(None, ge=0, description="Number of bedrooms"),
@@ -77,6 +78,7 @@ async def get_properties(
     - listing_id
     - city
     - state
+    - zipcode
     """
     try:
         # Build query
@@ -91,6 +93,8 @@ async def get_properties(
             query = query.filter(Property.city.ilike(f"%{city}%"))
         if state:
             query = query.filter(Property.state_or_province.ilike(f"%{state}%"))
+        if zipcode:
+            query = query.filter(Property.postal_code.ilike(f"%{zipcode}%"))
         # if min_price:
         #     query = query.filter(Property.list_price >= min_price)
         # if max_price:
@@ -140,7 +144,7 @@ async def autocomplete(
     """
     Smart autocomplete that prioritizes:
     - Cities if query starts with letters (e.g., "Sea" → "Seattle", "Seatac")
-    - Addresses if query starts with numbers (e.g., "1105 Spring" → addresses starting with "1105 Spring")
+    - Addresses and zip codes if query starts with numbers (e.g., "9810" → "98101" zip code and "9810 Spring St" address)
     
     Uses prefix matching for better relevance (starts with query, not contains)
     """
@@ -149,7 +153,7 @@ async def autocomplete(
         if not q_trimmed:
             return {"suggestions": []}
         
-        # Detect query type: starts with number = address, starts with letter = city
+        # Detect query type: starts with number = address/zip, starts with letter = city
         query_starts_with_number = q_trimmed[0].isdigit()
         
         suggestions = []
@@ -159,8 +163,39 @@ async def autocomplete(
         contains_term = f"%{q_trimmed}%"
         
         if query_starts_with_number:
-            # Prioritize addresses - get prefix matches first, then contains matches
-            # Prefix matches (higher relevance)
+            # Check if it looks like a zip code (all digits, 5 or fewer chars)
+            is_potential_zip = q_trimmed.isdigit() and len(q_trimmed) <= 5
+            
+            if is_potential_zip:
+                # Prioritize zip codes first
+                zip_limit = max(3, limit // 2)
+                zip_query = db.query(
+                    Property.postal_code,
+                    Property.city,
+                    Property.state_or_province,
+                    func.count(Property.id).label('count')
+                ).filter(
+                    and_(
+                        Property.postal_code.isnot(None),
+                        Property.postal_code.ilike(prefix_term)
+                    )
+                ).group_by(Property.postal_code, Property.city, Property.state_or_province).limit(zip_limit).all()
+                
+                for postal_code, city, state, count in zip_query:
+                    if postal_code:
+                        suggestions.append({
+                            "type": "zipcode",
+                            "value": postal_code,
+                            "zipCode": postal_code,
+                            "city": city or "",
+                            "state": state or "",
+                            "count": count,
+                            "display": f"{postal_code} - {city}, {state} ({count} properties)" if city else f"{postal_code} ({count} properties)",
+                            "relevance": "prefix"
+                        })
+            
+            # Then addresses - get prefix matches
+            address_limit = limit - len(suggestions) if is_potential_zip else limit
             address_prefix_query = db.query(
                 Property.unparsed_address,
                 Property.city,
@@ -172,7 +207,7 @@ async def autocomplete(
                     Property.street_number.isnot(None),
                     Property.city.isnot(None)
                 )
-            ).group_by(Property.unparsed_address).limit(limit).all()
+            ).group_by(Property.unparsed_address).limit(address_limit).all()
             
             for unparsed_address, city, state, prop_id in address_prefix_query:
                 if unparsed_address:
@@ -188,7 +223,6 @@ async def autocomplete(
             
             # Contains matches (lower relevance) if we need more results
             if len(suggestions) < limit:
-                # Get prefix-matched addresses to exclude
                 prefix_addresses = {addr[0] for addr in address_prefix_query if addr[0]}
                 
                 address_contains_query = db.query(
@@ -204,7 +238,6 @@ async def autocomplete(
                     )
                 ).group_by(Property.unparsed_address).limit((limit - len(suggestions)) * 2).all()
                 
-                # Filter out prefix matches in Python
                 address_contains_query = [
                     addr for addr in address_contains_query 
                     if addr[0] and addr[0] not in prefix_addresses
@@ -221,31 +254,6 @@ async def autocomplete(
                             "display": unparsed_address,
                             "relevance": "contains"
                         })
-            
-            # Add cities as secondary (fewer results)
-            city_limit = max(1, limit // 3)
-            city_query = db.query(
-                Property.city,
-                Property.state_or_province,
-                func.count(Property.id).label('count')
-            ).filter(
-                and_(
-                    Property.city.isnot(None),
-                    Property.city.ilike(prefix_term)
-                )
-            ).group_by(Property.city, Property.state_or_province).limit(city_limit).all()
-            
-            for city, state, count in city_query:
-                if city:
-                    suggestions.append({
-                        "type": "city",
-                        "value": f"{city}, {state}" if state else city,
-                        "city": city,
-                        "state": state or "",
-                        "count": count,
-                        "display": f"{city}, {state} ({count} properties)" if state else f"{city} ({count} properties)",
-                        "relevance": "prefix"
-                    })
         
         else:
             # Prioritize cities - get prefix matches first
@@ -274,7 +282,6 @@ async def autocomplete(
             
             # Contains matches for cities if we need more
             if len(suggestions) < limit:
-                # Get prefix-matched cities to exclude
                 prefix_cities = {(city[0], city[1]) for city in city_prefix_query if city[0]}
                 
                 city_contains_query = db.query(
@@ -288,7 +295,6 @@ async def autocomplete(
                     )
                 ).group_by(Property.city, Property.state_or_province).limit((limit - len(suggestions)) * 2).all()
                 
-                # Filter out prefix matches in Python
                 city_contains_query = [
                     city for city in city_contains_query 
                     if city[0] and (city[0], city[1]) not in prefix_cities
@@ -334,11 +340,12 @@ async def autocomplete(
                     })
         
         # Sort by relevance (prefix first, then contains), then by type priority, then alphabetically
+        type_priority = {"zipcode": 0, "address": 1, "city": 2} if query_starts_with_number else {"city": 0, "address": 1, "zipcode": 2}
         suggestions = sorted(
             suggestions,
             key=lambda x: (
                 x.get("relevance") != "prefix",  # Prefix matches first
-                x["type"] == ("city" if query_starts_with_number else "address"),  # Primary type first
+                type_priority.get(x["type"], 3),  # Primary type first based on query
                 x["display"].lower()
             )
         )[:limit]

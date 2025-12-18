@@ -43,9 +43,10 @@ interface PropertiesResponse {
 const fetchProperties = async (
   address?: string,
   city?: string,
-  state?: string
+  state?: string,
+  zipcode?: string
 ): Promise<PropertiesResponse> => {
-  if (!address && !city) {
+  if (!address && !city && !zipcode) {
     return { properties: [], total: 0, page: 1, pageSize: 20, hasMore: false, totalPages: 0 }
   }
 
@@ -58,6 +59,9 @@ const fetchProperties = async (
   }
   if (state) {
     params.set('state', state)
+  }
+  if (zipcode) {
+    params.set('zipcode', zipcode)
   }
 
   const response = await fetch(
@@ -77,16 +81,22 @@ export default function ResultsPage() {
   const address = searchParams.get('address') || ''
   const city = searchParams.get('city') || ''
   const state = searchParams.get('state') || ''
+  const zipcode = searchParams.get('zipcode') || ''
 
   const { data, isLoading, error } = useQuery<PropertiesResponse>({
-    queryKey: ['properties', address, city, state],
-    queryFn: () => fetchProperties(address || undefined, city || undefined, state || undefined),
-    enabled: address.length > 0 || city.length > 0,
+    queryKey: ['properties', address, city, state, zipcode],
+    queryFn: () => fetchProperties(address || undefined, city || undefined, state || undefined, zipcode || undefined),
+    enabled: address.length > 0 || city.length > 0 || zipcode.length > 0,
   })
 
-  const [searchQuery, setSearchQuery] = useState(
-    address || (city ? `${city}${state ? `, ${state}` : ''}` : '')
-  )
+  const getDisplayQuery = () => {
+    if (address) return address
+    if (zipcode) return zipcode
+    if (city) return `${city}${state ? `, ${state}` : ''}`
+    return ''
+  }
+
+  const [searchQuery, setSearchQuery] = useState(getDisplayQuery())
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -111,20 +121,20 @@ export default function ResultsPage() {
 
       {/* Results */}
       <div className="flex-1 max-w-7xl mx-auto w-full px-4 py-8">
-        {address || city ? (
+        {address || city || zipcode ? (
           <PropertyResults
             data={data ? {
               ...data,
-              query: address || (city ? `${city}${state ? `, ${state}` : ''}` : '')
+              query: getDisplayQuery()
             } : undefined}
             isLoading={isLoading}
             error={error}
-            searchQuery={address || (city ? `${city}${state ? `, ${state}` : ''}` : '')}
+            searchQuery={getDisplayQuery()}
           />
         ) : (
           <div className="text-center py-12">
             <p className="text-gray-600 dark:text-gray-400">
-              Enter an address or city to search for properties
+              Enter an address, city, or zip code to search for properties
             </p>
           </div>
         )}
