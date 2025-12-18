@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+
 interface Property {
   id: string
   mlsNumber: string
@@ -95,9 +97,11 @@ export default function PropertyResults({
 
       <div className="space-y-6">
         {data.properties.map((property) => (
-          <div
+          <Link
             key={property.id}
-            className="border border-gray-200 dark:border-gray-800 rounded-lg p-6 hover:shadow-lg transition-shadow bg-white dark:bg-gray-900"
+            href={`/property/${property.id}`}
+            className="block border border-gray-200 dark:border-gray-800 rounded-lg p-6 hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-700 transition-all bg-white dark:bg-gray-900 cursor-pointer"
+            aria-label={`View details for ${property.address.full}`}
           >
             <div className="flex gap-6">
               {/* Image */}
@@ -162,7 +166,7 @@ export default function PropertyResults({
                 </div>
               </div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
 

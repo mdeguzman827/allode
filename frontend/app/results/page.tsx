@@ -97,21 +97,6 @@ export default function ResultsPage() {
 
   return (
     <main className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link href="/" className="text-2xl font-normal text-gray-900 dark:text-gray-100 hover:opacity-80">
-            Allode
-          </Link>
-          <Link 
-            href="/" 
-            className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
-          >
-            New Search
-          </Link>
-        </div>
-      </header>
-
       {/* Search Bar */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6">
         <div className="max-w-4xl mx-auto">

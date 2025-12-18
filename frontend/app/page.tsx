@@ -18,17 +18,8 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="p-6">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-2xl font-normal text-gray-900 dark:text-gray-100">
-            Allode
-          </h1>
-        </div>
-      </header>
-
       {/* Main Content - Centered */}
-      <div className="flex-1 flex items-center justify-center px-4 -mt-20">
+      <div className="flex-1 flex items-center justify-center px-4">
         <div className="w-full max-w-2xl">
           {/* Logo/Title */}
           <div className="text-center mb-12">
