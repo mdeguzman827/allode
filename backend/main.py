@@ -3,16 +3,23 @@ FastAPI backend for property search API
 """
 from fastapi import FastAPI, Query, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from typing import Optional, List
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, nullslast, func
+import requests
+from datetime import datetime, timedelta
 
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from database.models import get_engine, get_session, Property
+from database.models import get_engine, get_session, Property, PropertyMedia
 from services.property_transformer import transform_for_frontend
+
+# In-memory image cache: {cache_key: (image_data, content_type, expires_at)}
+image_cache = {}
+CACHE_DURATION_HOURS = 24  # Cache images for 24 hours
 
 app = FastAPI(title="Allode Property API", version="1.0.0")
 
@@ -374,6 +381,170 @@ async def get_property_by_id(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching property: {str(e)}")
+
+
+@app.get("/api/images/{property_id}/{image_index}")
+async def get_property_image(
+    property_id: str,
+    image_index: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Proxy endpoint for property images with caching.
+    Fetches images from NWMLS API and caches them to avoid 429 errors on refresh.
+    """
+    try:
+        # #region agent log
+        import json
+        log_data = {
+            "location": "backend/main.py:382",
+            "message": "Image proxy request",
+            "data": {"property_id": property_id, "image_index": image_index},
+            "timestamp": int(datetime.now().timestamp() * 1000),
+            "sessionId": "debug-session",
+            "runId": "run1",
+            "hypothesisId": "A"
+        }
+        try:
+            with open("/Users/marvindeguzman/Desktop/Allode/Production/allode v1/.cursor/debug.log", "a") as f:
+                f.write(json.dumps(log_data) + "\n")
+        except:
+            pass
+        # #endregion
+
+        # Check cache first
+        cache_key = f"{property_id}_{image_index}"
+        if cache_key in image_cache:
+            cached_data, content_type, expires_at = image_cache[cache_key]
+            if datetime.now() < expires_at:
+                # #region agent log
+                log_data = {
+                    "location": "backend/main.py:400",
+                    "message": "Image served from cache",
+                    "data": {"property_id": property_id, "image_index": image_index},
+                    "timestamp": int(datetime.now().timestamp() * 1000),
+                    "sessionId": "debug-session",
+                    "runId": "run1",
+                    "hypothesisId": "B"
+                }
+                try:
+                    with open("/Users/marvindeguzman/Desktop/Allode/Production/allode v1/.cursor/debug.log", "a") as f:
+                        f.write(json.dumps(log_data) + "\n")
+                except:
+                    pass
+                # #endregion
+                return Response(content=cached_data, media_type=content_type)
+            else:
+                # Cache expired, remove it
+                del image_cache[cache_key]
+
+        # Query PropertyMedia table for the image URL
+        media_items = db.query(PropertyMedia).filter_by(
+            property_id=property_id
+        ).order_by(PropertyMedia.order).all()
+        
+        image_url = None
+        
+        if media_items and image_index < len(media_items):
+            # Use image from PropertyMedia table
+            media_item = media_items[image_index]
+            image_url = media_item.media_url
+        elif image_index == 0:
+            # Fallback to primary_image_url from Property table for index 0
+            property_obj = db.query(Property).filter_by(id=property_id).first()
+            if property_obj and property_obj.primary_image_url:
+                image_url = property_obj.primary_image_url
+        
+        if not image_url:
+            raise HTTPException(status_code=404, detail="Image not found")
+        
+        # #region agent log
+        log_data = {
+            "location": "backend/main.py:425",
+            "message": "Fetching image from original URL",
+            "data": {"property_id": property_id, "image_index": image_index, "media_url": image_url[:100] if image_url else None},
+            "timestamp": int(datetime.now().timestamp() * 1000),
+            "sessionId": "debug-session",
+            "runId": "run1",
+            "hypothesisId": "C"
+        }
+        try:
+            with open("/Users/marvindeguzman/Desktop/Allode/Production/allode v1/.cursor/debug.log", "a") as f:
+                f.write(json.dumps(log_data) + "\n")
+        except:
+            pass
+        # #endregion
+
+        # Fetch image from original URL
+        try:
+            response = requests.get(image_url, timeout=10, stream=True)
+            response.raise_for_status()
+            
+            image_data = response.content
+            content_type = response.headers.get('Content-Type', 'image/jpeg')
+            
+            # Cache the image
+            expires_at = datetime.now() + timedelta(hours=CACHE_DURATION_HOURS)
+            image_cache[cache_key] = (image_data, content_type, expires_at)
+            
+            # #region agent log
+            log_data = {
+                "location": "backend/main.py:445",
+                "message": "Image fetched and cached",
+                "data": {"property_id": property_id, "image_index": image_index, "size": len(image_data)},
+                "timestamp": int(datetime.now().timestamp() * 1000),
+                "sessionId": "debug-session",
+                "runId": "run1",
+                "hypothesisId": "D"
+            }
+            try:
+                with open("/Users/marvindeguzman/Desktop/Allode/Production/allode v1/.cursor/debug.log", "a") as f:
+                    f.write(json.dumps(log_data) + "\n")
+            except:
+                pass
+            # #endregion
+            
+            return Response(content=image_data, media_type=content_type)
+            
+        except requests.exceptions.RequestException as e:
+            # #region agent log
+            log_data = {
+                "location": "backend/main.py:460",
+                "message": "Image fetch failed",
+                "data": {"property_id": property_id, "image_index": image_index, "error": str(e)[:200]},
+                "timestamp": int(datetime.now().timestamp() * 1000),
+                "sessionId": "debug-session",
+                "runId": "run1",
+                "hypothesisId": "E"
+            }
+            try:
+                with open("/Users/marvindeguzman/Desktop/Allode/Production/allode v1/.cursor/debug.log", "a") as f:
+                    f.write(json.dumps(log_data) + "\n")
+            except:
+                pass
+            # #endregion
+            raise HTTPException(status_code=502, detail=f"Failed to fetch image: {str(e)}")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        # #region agent log
+        log_data = {
+            "location": "backend/main.py:475",
+            "message": "Image proxy error",
+            "data": {"property_id": property_id, "image_index": image_index, "error": str(e)[:200]},
+            "timestamp": int(datetime.now().timestamp() * 1000),
+            "sessionId": "debug-session",
+            "runId": "run1",
+            "hypothesisId": "F"
+        }
+        try:
+            with open("/Users/marvindeguzman/Desktop/Allode/Production/allode v1/.cursor/debug.log", "a") as f:
+                f.write(json.dumps(log_data) + "\n")
+        except:
+            pass
+        # #endregion
+        raise HTTPException(status_code=500, detail=f"Error fetching image: {str(e)}")
 
 
 # @app.get("/api/properties/search")

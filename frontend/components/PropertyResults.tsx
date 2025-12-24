@@ -2,6 +2,8 @@
 
 import Link from 'next/link'
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
 interface Property {
   id: string
   mlsNumber: string
@@ -47,6 +49,10 @@ export default function PropertyResults({
   error,
   searchQuery,
 }: PropertyResultsProps) {
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/3c6262fb-453d-4746-a4ed-fa5ace1b05b9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PropertyResults.tsx:48',message:'Component render',data:{isLoading,hasData:!!data,hasError:!!error,searchQuery:searchQuery?.substring(0,50)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
+
   if (isLoading) {
     return (
       <div className="mt-12 text-center">
@@ -57,6 +63,9 @@ export default function PropertyResults({
   }
 
   if (error) {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/3c6262fb-453d-4746-a4ed-fa5ace1b05b9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PropertyResults.tsx:62',message:'Error state',data:{errorMessage:error?.message?.substring(0,100)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     return (
       <div className="mt-12 text-center">
         <p className="text-red-600 dark:text-red-400">
@@ -67,6 +76,9 @@ export default function PropertyResults({
   }
 
   if (!data || data.properties.length === 0) {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/3c6262fb-453d-4746-a4ed-fa5ace1b05b9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PropertyResults.tsx:73',message:'No data state',data:{hasData:!!data,propertiesLength:data?.properties?.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
     return (
       <div className="mt-12 text-center">
         <p className="text-gray-600 dark:text-gray-400">
@@ -86,6 +98,10 @@ export default function PropertyResults({
       maximumFractionDigits: 0,
     }).format(price)
   }
+
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/3c6262fb-453d-4746-a4ed-fa5ace1b05b9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PropertyResults.tsx:95',message:'Rendering properties list',data:{propertiesCount:data.properties.length,firstPropertyId:data.properties[0]?.id,firstPropertyHasImage:!!data.properties[0]?.images?.[0]?.url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+  // #endregion
 
   return (
     <div className="mt-12">
@@ -108,10 +124,13 @@ export default function PropertyResults({
               {property.images && property.images.length > 0 && property.images[0].url ? (
                 <div className="flex-shrink-0">
                   <img
-                    src={property.images[0].url}
+                    src={`${API_URL}/api/images/${property.id}/0`}
                     alt={property.address.full}
                     className="w-48 h-48 object-cover rounded-lg"
                     onError={(e) => {
+                      // #region agent log
+                      fetch('http://127.0.0.1:7242/ingest/3c6262fb-453d-4746-a4ed-fa5ace1b05b9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PropertyResults.tsx:130',message:'Image load error',data:{propertyId:property.id,proxyUrl:`${API_URL}/api/images/${property.id}/0`},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+                      // #endregion
                       e.currentTarget.src = 'https://via.placeholder.com/192x192?text=No+Image'
                     }}
                   />
@@ -180,4 +199,3 @@ export default function PropertyResults({
     </div>
   )
 }
-

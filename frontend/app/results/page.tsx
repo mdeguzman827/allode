@@ -1,11 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import PropertySearch from '@/components/PropertySearch'
 import PropertyResults from '@/components/PropertyResults'
 import Link from 'next/link'
+
+// #region agent log
+fetch('http://127.0.0.1:7242/ingest/3c6262fb-453d-4746-a4ed-fa5ace1b05b9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'results/page.tsx:8',message:'Import check',data:{propertyResultsType:typeof PropertyResults,isFunction:typeof PropertyResults === 'function',isObject:typeof PropertyResults === 'object',hasDefault:!!PropertyResults},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+// #endregion
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -76,18 +80,16 @@ const fetchProperties = async (
 }
 
 export default function ResultsPage() {
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/3c6262fb-453d-4746-a4ed-fa5ace1b05b9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'results/page.tsx:78',message:'ResultsPage render start',data:{propertyResultsType:typeof PropertyResults,isFunction:typeof PropertyResults === 'function'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
+
   const searchParams = useSearchParams()
   const router = useRouter()
   const address = searchParams.get('address') || ''
   const city = searchParams.get('city') || ''
   const state = searchParams.get('state') || ''
   const zipcode = searchParams.get('zipcode') || ''
-
-  const { data, isLoading, error } = useQuery<PropertiesResponse>({
-    queryKey: ['properties', address, city, state, zipcode],
-    queryFn: () => fetchProperties(address || undefined, city || undefined, state || undefined, zipcode || undefined),
-    enabled: address.length > 0 || city.length > 0 || zipcode.length > 0,
-  })
 
   const getDisplayQuery = () => {
     if (address) return address
@@ -96,7 +98,25 @@ export default function ResultsPage() {
     return ''
   }
 
-  const [searchQuery, setSearchQuery] = useState(getDisplayQuery())
+  const [searchQuery, setSearchQuery] = useState(() => getDisplayQuery())
+
+  // Sync searchQuery state with URL params to prevent infinite loops
+  useEffect(() => {
+    const displayQuery = getDisplayQuery()
+    setSearchQuery(displayQuery)
+  }, [address, city, state, zipcode])
+
+  const { data, isLoading, error } = useQuery<PropertiesResponse>({
+    queryKey: ['properties', address, city, state, zipcode],
+    queryFn: () => fetchProperties(address || undefined, city || undefined, state || undefined, zipcode || undefined),
+    enabled: address.length > 0 || city.length > 0 || zipcode.length > 0,
+  })
+
+  // #region agent log
+  useEffect(() => {
+    fetch('http://127.0.0.1:7242/ingest/3c6262fb-453d-4746-a4ed-fa5ace1b05b9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'results/page.tsx:105',message:'Before PropertyResults render',data:{propertyResultsType:typeof PropertyResults,isFunction:typeof PropertyResults === 'function',hasData:!!data,isLoading,hasError:!!error,shouldRender:!!(address || city || zipcode)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+  }, [data, isLoading, error, address, city, zipcode]);
+  // #endregion
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
