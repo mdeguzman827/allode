@@ -55,6 +55,19 @@ export default function PropertyPage() {
         }
         const data = await response.json()
         setProperty(data)
+        
+        // Preload critical images (primary + next 4) for faster rendering
+        if (data.images && data.images.length > 0) {
+          const imagesToPreload = Math.min(5, data.images.length)
+          for (let i = 0; i < imagesToPreload; i++) {
+            const link = document.createElement('link')
+            link.rel = 'preload'
+            link.as = 'image'
+            link.href = `${API_URL}/api/images/${params.id}/${i}`
+            link.fetchPriority = i === 0 ? 'high' : 'auto'
+            document.head.appendChild(link)
+          }
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load property')
       } finally {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import PropertySearch from '@/components/PropertySearch'
@@ -83,20 +83,24 @@ export default function ResultsPage() {
   const state = searchParams.get('state') || ''
   const zipcode = searchParams.get('zipcode') || ''
 
-  const getDisplayQuery = () => {
+  // Memoize display query to prevent unnecessary re-renders
+  const displayQuery = useMemo(() => {
     if (address) return address
     if (zipcode) return zipcode
     if (city) return `${city}${state ? `, ${state}` : ''}`
     return ''
-  }
-
-  const [searchQuery, setSearchQuery] = useState(() => getDisplayQuery())
-
-  // Sync searchQuery state with URL params to prevent infinite loops
-  useEffect(() => {
-    const displayQuery = getDisplayQuery()
-    setSearchQuery(displayQuery)
   }, [address, city, state, zipcode])
+
+  const [searchQuery, setSearchQuery] = useState(displayQuery)
+
+  // Sync searchQuery state with URL params only if it actually changed
+  // Only depend on displayQuery to avoid unnecessary re-runs
+  useEffect(() => {
+    setSearchQuery((prevQuery) => {
+      // Only update if the display query actually changed
+      return prevQuery !== displayQuery ? displayQuery : prevQuery
+    })
+  }, [displayQuery])
 
   const { data, isLoading, error } = useQuery<PropertiesResponse>({
     queryKey: ['properties', address, city, state, zipcode],
@@ -131,11 +135,11 @@ export default function ResultsPage() {
           <PropertyResults
             data={data ? {
               ...data,
-              query: getDisplayQuery()
+              query: displayQuery
             } : undefined}
             isLoading={isLoading}
             error={error}
-            searchQuery={getDisplayQuery()}
+            searchQuery={displayQuery}
           />
         ) : (
           <div className="text-center py-12">

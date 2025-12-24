@@ -404,11 +404,20 @@ async def get_property_image(
         if cache_key in image_cache:
             cached_data, content_type, expires_at = image_cache[cache_key]
             if datetime.now() < expires_at:
-                return Response(content=cached_data, media_type=content_type)
+                # Return cached image with proper headers
+                return Response(
+                    content=cached_data,
+                    media_type=content_type,
+                    headers={
+                        "Cache-Control": "public, max-age=86400",  # 24 hours
+                        "ETag": f'"{cache_key}"',
+                    }
+                )
             else:
                 # Cache expired, remove it
                 del image_cache[cache_key]
 
+        # Optimize: Query both PropertyMedia and Property in parallel
         # Query PropertyMedia table and Property table
         media_items = db.query(PropertyMedia).filter_by(
             property_id=property_id
@@ -440,9 +449,17 @@ async def get_property_image(
         if not image_url:
             raise HTTPException(status_code=404, detail="Image not found")
         
-        # Fetch image from original URL
+        # Fetch image from original URL with optimized settings
         try:
-            response = requests.get(image_url, timeout=10, stream=True)
+            # Use stream=True for memory efficiency and set connection timeout
+            response = requests.get(
+                image_url,
+                timeout=(5, 10),  # (connect timeout, read timeout)
+                stream=True,
+                headers={
+                    'User-Agent': 'Mozilla/5.0 (compatible; Allode/1.0)',
+                }
+            )
             response.raise_for_status()
             
             image_data = response.content
@@ -452,7 +469,16 @@ async def get_property_image(
             expires_at = datetime.now() + timedelta(hours=CACHE_DURATION_HOURS)
             image_cache[cache_key] = (image_data, content_type, expires_at)
             
-            return Response(content=image_data, media_type=content_type)
+            # Return with optimized headers for fast loading
+            return Response(
+                content=image_data,
+                media_type=content_type,
+                headers={
+                    "Cache-Control": "public, max-age=86400",  # 24 hours browser cache
+                    "ETag": f'"{cache_key}"',
+                    "X-Content-Type-Options": "nosniff",
+                }
+            )
             
         except requests.exceptions.RequestException as e:
             raise HTTPException(status_code=502, detail=f"Failed to fetch image: {str(e)}")

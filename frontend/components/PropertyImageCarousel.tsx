@@ -139,6 +139,7 @@ export default function PropertyImageCarousel({
                   fill
                   className="object-cover transition-transform group-hover:scale-105"
                   priority
+                  fetchPriority="high"
                   sizes="(max-width: 768px) 100vw, 66vw"
                   unoptimized={true}
                   onError={(e) => {
@@ -183,6 +184,7 @@ export default function PropertyImageCarousel({
                         className="object-cover transition-transform group-hover:scale-105"
                         sizes="(max-width: 768px) 50vw, 17vw"
                         loading="eager"
+                        fetchPriority={idx < 2 ? "high" : "auto"}
                         unoptimized={true}
                         onError={(e) => {
                           const target = e.target as HTMLImageElement
