@@ -368,14 +368,19 @@ async def get_property_by_id(
     property_id: str,
     db: Session = Depends(get_db)
 ):
-    """Get a single property by ID"""
+    """Get a single property by ID with all media images"""
     try:
         property_obj = db.query(Property).filter_by(id=property_id).first()
         
         if not property_obj:
             raise HTTPException(status_code=404, detail="Property not found")
         
-        return transform_for_frontend(property_obj)
+        # Query all media items for this property
+        media_items = db.query(PropertyMedia).filter_by(
+            property_id=property_id
+        ).order_by(PropertyMedia.order).all()
+        
+        return transform_for_frontend(property_obj, media_items)
     
     except HTTPException:
         raise
@@ -404,22 +409,33 @@ async def get_property_image(
                 # Cache expired, remove it
                 del image_cache[cache_key]
 
-        # Query PropertyMedia table for the image URL
+        # Query PropertyMedia table and Property table
         media_items = db.query(PropertyMedia).filter_by(
             property_id=property_id
         ).order_by(PropertyMedia.order).all()
         
+        property_obj = db.query(Property).filter_by(id=property_id).first()
+        
         image_url = None
         
-        if media_items and image_index < len(media_items):
-            # Use image from PropertyMedia table
-            media_item = media_items[image_index]
-            image_url = media_item.media_url
-        elif image_index == 0:
-            # Fallback to primary_image_url from Property table for index 0
-            property_obj = db.query(Property).filter_by(id=property_id).first()
+        # Image index mapping matches transform_for_frontend:
+        # Index 0 = primary_image_url (always first)
+        # Index 1+ = PropertyMedia entries (excluding any that match primary_image_url)
+        if image_index == 0:
+            # Index 0 is always the primary image
             if property_obj and property_obj.primary_image_url:
                 image_url = property_obj.primary_image_url
+        elif image_index > 0 and media_items:
+            # Filter out PropertyMedia entries that match primary_image_url (to avoid duplicates)
+            primary_url = property_obj.primary_image_url if property_obj else None
+            filtered_media = [m for m in media_items if m.media_url and m.media_url != primary_url]
+            
+            # Index 1+ maps to filtered PropertyMedia entries
+            media_index = image_index - 1
+            if media_index < len(filtered_media):
+                media_item = filtered_media[media_index]
+                if media_item.media_url:
+                    image_url = media_item.media_url
         
         if not image_url:
             raise HTTPException(status_code=404, detail="Image not found")

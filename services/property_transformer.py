@@ -136,16 +136,55 @@ def transform_media(raw_property: Dict[str, Any]) -> List[Dict[str, Any]]:
     return transformed_media
 
 
-def transform_for_frontend(property_obj) -> Dict[str, Any]:
+def transform_for_frontend(property_obj, media_items: Optional[List] = None) -> Dict[str, Any]:
     """
     Transform database property object to frontend-friendly format
     
     Args:
         property_obj: SQLAlchemy Property object
+        media_items: Optional list of PropertyMedia objects (if None, will need to be queried separately)
         
     Returns:
         Dictionary formatted for frontend consumption
     """
+    # Build images array from PropertyMedia if available, otherwise use primary_image_url
+    images = []
+    if media_items:
+        # Sort by order to ensure correct sequence
+        sorted_media = sorted(media_items, key=lambda m: m.order if m.order is not None else 999)
+        for media in sorted_media:
+            if media.media_url:
+                images.append({
+                    "url": media.media_url,  # Frontend will use proxy endpoint, this is just for reference
+                    "order": media.order if media.order is not None else len(images),
+                    "type": media.media_category or "photo",
+                    "width": media.image_width,
+                    "height": media.image_height,
+                    "isPreferred": media.preferred_photo_yn or False
+                })
+    
+    # Always include primary_image_url if available (either as fallback or as first image)
+    # Check if primary_image_url is already in the images array
+    primary_url_in_images = any(img.get("url") == property_obj.primary_image_url for img in images)
+    
+    if property_obj.primary_image_url and not primary_url_in_images:
+        # Insert primary image at the beginning if not already present
+        images.insert(0, {
+            "url": property_obj.primary_image_url,
+            "order": 0,
+            "type": "photo",
+            "isPreferred": True
+        })
+    
+    # Final fallback: if still no images, use primary_image_url
+    if not images and property_obj.primary_image_url:
+        images.append({
+            "url": property_obj.primary_image_url,
+            "order": 0,
+            "type": "photo",
+            "isPreferred": True
+        })
+    
     return {
         "id": property_obj.id,
         "mlsNumber": property_obj.listing_id,
@@ -167,11 +206,7 @@ def transform_for_frontend(property_obj) -> Dict[str, Any]:
             "yearBuilt": property_obj.year_built,
             "status": property_obj.standard_status
         },
-        "images": [{
-            "url": property_obj.primary_image_url,
-            "order": 0,
-            "type": "photo"
-        }] if property_obj.primary_image_url else [],
+        "images": images,
         "description": property_obj.public_remarks,
         "coordinates": {
             "lat": property_obj.latitude,
