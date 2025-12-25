@@ -125,7 +125,7 @@ export default function PropertyImageCarousel({
     <>
       {/* Zillow-style Gallery Layout - Full Width */}
       <div className="w-full">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 h-[400px] md:h-[450px]">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 h-[500px] md:h-[600px]">
           {/* Primary Image - Large on Left */}
           <div 
             className="relative col-span-1 md:col-span-2 overflow-hidden bg-gray-100 dark:bg-gray-900 cursor-pointer group"

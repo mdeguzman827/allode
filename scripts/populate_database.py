@@ -66,6 +66,7 @@ def populate_database(database_url: str = None, limit: int = 500):
         
         inserted_count = 0
         skipped_count = 0
+        error_count = 0
         
         for idx, raw_prop in enumerate(raw_properties, 1):
             try:
@@ -79,40 +80,87 @@ def populate_database(database_url: str = None, limit: int = 500):
                     skipped_count += 1
                     continue
                 
-                # Use no_autoflush to prevent premature flushes during insertion
-                with session.no_autoflush:
-                    # Create property object
-                    property_obj = Property(**property_data)
-                    session.add(property_obj)
-                    
-                    # Transform and add media
-                    media_list = transform_media(raw_prop)
-                    for media_data in media_list:
-                        media_obj = PropertyMedia(**media_data)
-                        session.add(media_obj)
+                # Create property object
+                property_obj = Property(**property_data)
+                session.add(property_obj)
+                
+                # Transform and add media
+                media_list = transform_media(raw_prop)
+                for media_data in media_list:
+                    media_obj = PropertyMedia(**media_data)
+                    session.add(media_obj)
                 
                 # Commit every 50 properties to avoid memory issues
                 if idx % 50 == 0:
-                    session.commit()
-                    print(f"  [{idx}/{len(raw_properties)}] Inserted {idx} properties...")
+                    try:
+                        session.flush()  # Flush before commit to catch any errors early
+                        session.commit()
+                        print(f"  [{idx}/{len(raw_properties)}] Committed batch of 50 properties...")
+                    except Exception as commit_error:
+                        print(f"  [{idx}/{len(raw_properties)}] Commit error: {commit_error}")
+                        session.rollback()
+                        error_count += 50  # Approximate, since we don't know which ones failed
+                        import traceback
+                        traceback.print_exc()
+                        # Don't increment inserted_count for failed batch
+                        inserted_count -= 50
+                        continue
                 
                 inserted_count += 1
                 
             except Exception as e:
-                print(f"  [{idx}/{len(raw_properties)}] Error processing property: {e}")
+                listing_id = raw_prop.get('ListingId') or raw_prop.get('ListingKey', 'unknown')
+                print(f"\n  [{idx}/{len(raw_properties)}] ✗ Error processing property {listing_id}:")
+                print(f"     Error type: {type(e).__name__}")
+                print(f"     Error message: {str(e)}")
+                error_count += 1
                 session.rollback()
+                # Only show full traceback for first few errors to avoid spam
+                if error_count <= 3:
+                    import traceback
+                    traceback.print_exc()
                 continue
         
-        # Final commit
-        session.commit()
+        # Final commit for remaining properties
+        try:
+            session.flush()  # Flush before commit to catch any errors early
+            session.commit()
+            print(f"\n✓ Final commit successful")
+        except Exception as commit_error:
+            print(f"\n✗ Final commit error: {commit_error}")
+            session.rollback()
+            import traceback
+            traceback.print_exc()
+            # Adjust inserted_count for failed final commit
+            remaining = inserted_count % 50
+            if remaining > 0:
+                error_count += remaining
+                inserted_count -= remaining
+        
+        # Close current session and create new one to get accurate counts
+        session.close()
+        new_session = get_session(engine)
+        
+        try:
+            # Get actual counts from database using fresh session
+            actual_property_count = new_session.query(Property).count()
+            actual_media_count = new_session.query(PropertyMedia).count()
+        finally:
+            new_session.close()
         
         print("\n" + "=" * 60)
         print("Database Population Complete!")
         print("=" * 60)
-        print(f"✓ Inserted: {inserted_count} properties")
+        print(f"✓ Attempted to insert: {inserted_count} properties")
         print(f"✓ Skipped: {skipped_count} properties (already exist)")
-        print(f"✓ Total in database: {session.query(Property).count()} properties")
-        print(f"✓ Total media items: {session.query(PropertyMedia).count()} media items")
+        print(f"✗ Errors: {error_count} properties")
+        print(f"\n📊 Actual Database Counts:")
+        print(f"✓ Total properties in database: {actual_property_count}")
+        print(f"✓ Total media items in database: {actual_media_count}")
+        
+        if actual_property_count == 0 and inserted_count > 0:
+            print("\n⚠️  WARNING: No properties were actually inserted despite attempts!")
+            print("   This suggests commit failures. Check error messages above.")
         
     except Exception as e:
         session.rollback()
