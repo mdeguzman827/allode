@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import PropertyImageCarousel from '@/components/PropertyImageCarousel'
 
@@ -123,7 +123,6 @@ interface Property {
 
 export default function PropertyPage() {
   const params = useParams()
-  const router = useRouter()
   const [property, setProperty] = useState<Property | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -165,10 +164,6 @@ export default function PropertyPage() {
     }
   }, [params.id])
 
-  const handleGoBack = () => {
-    router.back()
-  }
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -208,116 +203,53 @@ export default function PropertyPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Image Gallery - Full Width */}
-      {property.images && property.images.length > 0 ? (
+      {property.images && property.images.length > 0 && (
         <div className="relative w-full">
-          {/* Back Button - Overlay on Gallery */}
-          <div className="absolute top-4 left-4 z-10">
-            <button
-              onClick={handleGoBack}
-              className="flex items-center gap-2 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm px-4 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-900 transition-colors"
-              aria-label="Go back"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-              Back
-            </button>
-          </div>
           <PropertyImageCarousel
             images={property.images}
             propertyAddress={property.address.full}
             propertyId={property.id}
+            mlsStatus={property.propertyDetails.mlsStatus}
+            closeDate={property.propertyDetails.closeDate}
           />
-        </div>
-      ) : (
-        /* Back Button - When no images */
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <button
-            onClick={handleGoBack}
-            className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-            aria-label="Go back"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            Back
-          </button>
         </div>
       )}
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Property Header - Right below gallery */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 mt-6">
-          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-                {property.address.street || property.address.full}
-              </h1>
-              <p className="text-lg text-gray-600 dark:text-gray-400 mt-1">
-                {property.address.city}, {property.address.state} {property.address.zipCode}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                {property.price ? `$${property.price.toLocaleString()}` : 'Price N/A'}
-              </p>
-              {property.price && property.propertyDetails.squareFeet && (
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  ${Math.round(property.price / property.propertyDetails.squareFeet).toLocaleString()}/sq ft
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Status Badge */}
-          {property.propertyDetails.status && (
-            <div className="mt-4">
-              <span
-                className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                  property.propertyDetails.status === 'Active'
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                    : property.propertyDetails.status === 'Pending'
-                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                }`}
-              >
-                {property.propertyDetails.status}
-              </span>
-            </div>
-          )}
-        </div>
-
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 mt-8">
         {/* Property Details Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Details */}
           <div className="lg:col-span-2 space-y-6">
             {/* Key Features */}
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+              {/* Address and Price */}
+              <div className="mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
+                <p className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                  {(() => {
+                    const isSold = property.propertyDetails.mlsStatus?.toLowerCase() === 'sold'
+                    const displayPrice = isSold && property.propertyDetails.closePrice 
+                      ? property.propertyDetails.closePrice 
+                      : property.price
+                    return displayPrice ? `$${displayPrice.toLocaleString()}` : 'Price N/A'
+                  })()}
+                </p>
+                <h1 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">
+                  {property.address.full || `${property.address.street || ''}, ${property.address.city}, ${property.address.state} ${property.address.zipCode}`.trim()}
+                </h1>
+              </div>
+
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                 Property Details
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* Row 1: Property Type, Bedrooms, Bathrooms, Parking Total */}
+                <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">
+                    {property.propertyDetails.type || '-'}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Property Type</p>
+                </div>
                 <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {property.propertyDetails.bedrooms ?? '-'}
@@ -332,15 +264,42 @@ export default function PropertyPage() {
                 </div>
                 <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {property.propertyDetails.parkingTotal ?? '-'}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Parking Total</p>
+                </div>
+                {/* Row 2: Square Feet, Lot Size, Year Built, Price per Square Ft */}
+                <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {property.propertyDetails.squareFeet?.toLocaleString() || '-'}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Sq Ft</p>
                 </div>
                 <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {property.propertyDetails.lotSizeAcres ?? '-'}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Lot Size (Acres)</p>
+                </div>
+                <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {property.propertyDetails.yearBuilt ?? '-'}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Year Built</p>
+                </div>
+                <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {(() => {
+                      const isSold = property.propertyDetails.mlsStatus?.toLowerCase() === 'sold'
+                      const price = isSold && property.propertyDetails.closePrice 
+                        ? property.propertyDetails.closePrice 
+                        : property.price
+                      return price && property.propertyDetails.squareFeet
+                        ? `$${Math.round(price / property.propertyDetails.squareFeet).toLocaleString()}`
+                        : '-'
+                    })()}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Price/sq ft</p>
                 </div>
               </div>
             </div>
@@ -364,6 +323,12 @@ export default function PropertyPage() {
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <dl className="space-y-4">
+                  {property.propertyDetails.subType && (
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Property Sub Type</dt>
+                      <dd className="text-gray-900 dark:text-white">{property.propertyDetails.subType}</dd>
+                    </div>
+                  )}
                   {property.propertyDetails.appliances && (
                     <div>
                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Appliances</dt>
@@ -883,14 +848,6 @@ export default function PropertyPage() {
                     {property.mlsNumber || '-'}
                   </dd>
                 </div>
-                {property.propertyDetails.lotSize && (
-                  <div className="flex justify-between">
-                    <dt className="text-gray-500 dark:text-gray-400">Lot Size</dt>
-                    <dd className="text-gray-900 dark:text-white font-medium">
-                      {property.propertyDetails.lotSize.toLocaleString()} sq ft
-                    </dd>
-                  </div>
-                )}
                 {property.listingDate && (
                   <div className="flex justify-between">
                     <dt className="text-gray-500 dark:text-gray-400">List Date</dt>

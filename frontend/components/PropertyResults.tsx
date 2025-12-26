@@ -102,6 +102,8 @@ export default function PropertyResults({
           <Link
             key={property.id}
             href={`/property/${property.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
             className="block border border-gray-200 dark:border-gray-800 rounded-lg p-6 hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-700 transition-all bg-white dark:bg-gray-900 cursor-pointer"
             aria-label={`View details for ${property.address.full}`}
           >

@@ -18,12 +18,16 @@ interface PropertyImageCarouselProps {
   images: ImageData[]
   propertyAddress: string
   propertyId: string
+  mlsStatus?: string | null
+  closeDate?: string | null
 }
 
 export default function PropertyImageCarousel({
   images,
   propertyAddress,
   propertyId,
+  mlsStatus,
+  closeDate,
 }: PropertyImageCarouselProps) {
   const [showFullCarousel, setShowFullCarousel] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -124,11 +128,11 @@ export default function PropertyImageCarousel({
   return (
     <>
       {/* Zillow-style Gallery Layout - Full Width */}
-      <div className="w-full">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 h-[500px] md:h-[600px]">
+      <div className="w-full px-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 h-[500px] md:h-[600px] rounded-lg overflow-hidden">
           {/* Primary Image - Large on Left */}
           <div 
-            className="relative col-span-1 md:col-span-2 overflow-hidden bg-gray-100 dark:bg-gray-900 cursor-pointer group"
+            className="relative col-span-1 md:col-span-2 overflow-hidden bg-gray-100 dark:bg-gray-900 cursor-pointer group rounded-lg"
             onClick={() => handleImageClick(primaryIndex)}
           >
             {primaryImage ? (
@@ -149,14 +153,35 @@ export default function PropertyImageCarousel({
                     e.stopPropagation()
                   }}
                 />
-                {primaryImage.isPreferred && (
-                  <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-1.5">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                    </svg>
-                    Active
-                  </div>
-                )}
+                {mlsStatus && (() => {
+                  const isSold = mlsStatus.toLowerCase() === 'sold'
+                  const formatDate = (dateStr: string | null | undefined): string => {
+                    if (!dateStr) return ''
+                    try {
+                      const date = new Date(dateStr)
+                      const month = date.toLocaleDateString('en-US', { month: 'short' })
+                      const day = date.getDate()
+                      const year = date.getFullYear()
+                      return `${month} ${day}, ${year}`
+                    } catch {
+                      return ''
+                    }
+                  }
+                  
+                  const displayText = isSold && closeDate 
+                    ? `Sold ${formatDate(closeDate)}`
+                    : mlsStatus
+                  
+                  return (
+                    <div className={`absolute top-4 left-4 px-3 py-1.5 rounded-full text-sm font-medium border-2 border-white ${
+                      isSold 
+                        ? 'bg-black text-white' 
+                        : 'bg-blue-600 text-white'
+                    }`}>
+                      {displayText}
+                    </div>
+                  )
+                })()}
               </>
             ) : (
               <div className="absolute inset-0 flex items-center justify-center bg-gray-200 dark:bg-gray-800">
@@ -172,7 +197,7 @@ export default function PropertyImageCarousel({
               return (
                 <div
                   key={imageIndex}
-                  className="relative overflow-hidden bg-gray-100 dark:bg-gray-900 cursor-pointer group"
+                  className="relative overflow-hidden bg-gray-100 dark:bg-gray-900 cursor-pointer group rounded-lg"
                   onClick={() => handleImageClick(imageIndex)}
                 >
                   {image ? (
