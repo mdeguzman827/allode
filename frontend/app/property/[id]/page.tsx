@@ -212,7 +212,7 @@ export default function PropertyPage() {
             mlsStatus={property.propertyDetails.mlsStatus}
             closeDate={property.propertyDetails.closeDate}
           />
-        </div>
+      </div>
       )}
 
       {/* Main Content */}
@@ -243,7 +243,7 @@ export default function PropertyPage() {
                 Property Details
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {/* Row 1: Property Type, Bedrooms, Bathrooms, Parking Total */}
+                {/* Row 1: Property Type, Bedrooms, Bathrooms, Sq Ft */}
                 <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <p className="text-lg font-bold text-gray-900 dark:text-white">
                     {property.propertyDetails.type || '-'}
@@ -264,28 +264,30 @@ export default function PropertyPage() {
                 </div>
                 <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {property.propertyDetails.parkingTotal ?? '-'}
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Parking Total</p>
-                </div>
-                {/* Row 2: Square Feet, Lot Size, Year Built, Price per Square Ft */}
-                <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {property.propertyDetails.squareFeet?.toLocaleString() || '-'}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Sq Ft</p>
                 </div>
-                <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {property.propertyDetails.lotSizeAcres ?? '-'}
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Lot Size (Acres)</p>
-                </div>
+                {/* Row 2: Year Built, Parking Total, Lot Size, Price per Sq Ft */}
                 <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {property.propertyDetails.yearBuilt ?? '-'}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Year Built</p>
+                </div>
+                <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {property.propertyDetails.parkingTotal ?? '-'}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Parking Total</p>
+                </div>
+                <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {property.propertyDetails.lotSizeAcres !== null && property.propertyDetails.lotSizeAcres !== undefined
+                      ? property.propertyDetails.lotSizeAcres.toFixed(2)
+                      : '-'}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Lot Size (Acres)</p>
                 </div>
                 <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -323,6 +325,12 @@ export default function PropertyPage() {
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <dl className="space-y-4">
+                  {property.mlsNumber && (
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">MLS #</dt>
+                      <dd className="text-gray-900 dark:text-white">{property.mlsNumber}</dd>
+                    </div>
+                  )}
                   {property.propertyDetails.subType && (
                     <div>
                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Property Sub Type</dt>
@@ -524,7 +532,7 @@ export default function PropertyPage() {
                   {property.propertyDetails.lotSizeAcres !== null && property.propertyDetails.lotSizeAcres !== undefined && (
                     <div>
                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Lot Size (Acres)</dt>
-                      <dd className="text-gray-900 dark:text-white">{property.propertyDetails.lotSizeAcres}</dd>
+                      <dd className="text-gray-900 dark:text-white">{property.propertyDetails.lotSizeAcres.toFixed(2)}</dd>
                     </div>
                   )}
                   {property.propertyDetails.lostSizeSquareFeet !== null && property.propertyDetails.lostSizeSquareFeet !== undefined && (
@@ -803,73 +811,54 @@ export default function PropertyPage() {
                     <div>
                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Concessions</dt>
                       <dd className="text-gray-900 dark:text-white">{property.propertyDetails.concessions}</dd>
-                    </div>
+                </div>
                   )}
                   {property.propertyDetails.originatingSystemName && (
                     <div>
                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Originating System Name</dt>
                       <dd className="text-gray-900 dark:text-white">{property.propertyDetails.originatingSystemName}</dd>
-                    </div>
+                </div>
                   )}
                   {property.propertyDetails.mlgCanView !== null && property.propertyDetails.mlgCanView !== undefined && (
                     <div>
                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">MLG Can View</dt>
                       <dd className="text-gray-900 dark:text-white">{property.propertyDetails.mlgCanView ? 'Yes' : 'No'}</dd>
-                    </div>
-                  )}
+                  </div>
+                )}
                   {property.propertyDetails.mlgCanUse !== null && property.propertyDetails.mlgCanUse !== undefined && (
                     <div>
                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">MLG Can Use</dt>
                       <dd className="text-gray-900 dark:text-white">{property.propertyDetails.mlgCanUse ? 'Yes' : 'No'}</dd>
-                    </div>
-                  )}
-                </dl>
-              </div>
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Additional Info */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                Additional Info
-              </h2>
-              <dl className="space-y-3">
-                <div className="flex justify-between">
-                  <dt className="text-gray-500 dark:text-gray-400">Property Type</dt>
-                  <dd className="text-gray-900 dark:text-white font-medium">
-                    {property.propertyDetails.type || '-'}
-                  </dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-gray-500 dark:text-gray-400">MLS #</dt>
-                  <dd className="text-gray-900 dark:text-white font-medium">
-                    {property.mlsNumber || '-'}
-                  </dd>
-                </div>
-                {property.listingDate && (
-                  <div className="flex justify-between">
-                    <dt className="text-gray-500 dark:text-gray-400">List Date</dt>
-                    <dd className="text-gray-900 dark:text-white font-medium">
-                      {new Date(property.listingDate).toLocaleDateString()}
-                    </dd>
                   </div>
                 )}
               </dl>
+              </div>
+            </div>
             </div>
 
-            {/* Location */}
-            {property.coordinates && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                  Location
-                </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Coordinates: {property.coordinates.lat.toFixed(6)}, {property.coordinates.lng.toFixed(6)}
-                </p>
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Request a Tour, Request Disclosures, and Make an Offer Buttons */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 space-y-4 sticky top-8">
+              <button
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+                aria-label="Request a Tour"
+              >
+                Request a Tour
+              </button>
+              <button
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+                aria-label="Request Disclosures"
+              >
+                Request Disclosures
+              </button>
+              <button
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+                aria-label="Make an Offer"
+              >
+                Make an Offer
+              </button>
               </div>
-            )}
           </div>
         </div>
       </main>
