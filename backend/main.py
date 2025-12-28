@@ -63,8 +63,9 @@ async def root():
 
 @app.get("/api/properties")
 async def get_properties(
-    # page: int = Query(1, ge=1, description="Page number"),
-    # page_size: int = Query(20, ge=1, le=100, description="Items per page"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="Items per page"),
+    sort_by: str = Query("price_asc", description="Sort by: price_asc, price_desc, sqft_desc"),
     address: Optional[str] = Query(None, description="Filter by address"),
     listing_id: Optional[str] = Query(None, description="Filter by listing ID"),
     city: Optional[str] = Query(None, description="Filter by city"),
@@ -114,17 +115,25 @@ async def get_properties(
         #     query = query.filter(Property.standard_status.ilike(f"%{status}%"))
 
         
-        # Get total count
+        # Get total count (before applying sorting)
         total = query.count()
         
+        # Apply sorting - normalize the sort_by parameter
+        sort_by_normalized = sort_by.lower().strip() if sort_by else "price_asc"
+        
+        if sort_by_normalized == "price_asc":
+            query = query.order_by(nullslast(Property.list_price.asc()))
+        elif sort_by_normalized == "price_desc":
+            query = query.order_by(nullslast(Property.list_price.desc()))
+        elif sort_by_normalized == "sqft_desc":
+            query = query.order_by(nullslast(Property.living_area.desc()))
+        else:
+            # Default to price_asc if invalid sort_by
+            query = query.order_by(nullslast(Property.list_price.asc()))
+        
         # Apply pagination
-        page = 1 # default page
-        page_size = 20 # default page size
         offset = (page - 1) * page_size
-        # Handle None prices in ordering (put them last)
-        properties = query.order_by(
-            nullslast(Property.list_price.desc())
-        ).offset(offset).limit(page_size).all()
+        properties = query.offset(offset).limit(page_size).all()
         
         # Transform for frontend
         transformed_properties = [transform_for_frontend(prop) for prop in properties]

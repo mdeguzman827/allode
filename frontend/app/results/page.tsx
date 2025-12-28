@@ -44,7 +44,9 @@ const fetchProperties = async (
   address?: string,
   city?: string,
   state?: string,
-  zipcode?: string
+  zipcode?: string,
+  page: number = 1,
+  sortBy: string = 'price_asc'
 ): Promise<PropertiesResponse> => {
   if (!address && !city && !zipcode) {
     return { properties: [], total: 0, page: 1, pageSize: 20, hasMore: false, totalPages: 0 }
@@ -63,6 +65,9 @@ const fetchProperties = async (
   if (zipcode) {
     params.set('zipcode', zipcode)
   }
+  params.set('page', page.toString())
+  params.set('page_size', '20')
+  params.set('sort_by', sortBy)
 
   const response = await fetch(
     `${API_URL}/api/properties?${params.toString()}`
@@ -82,6 +87,8 @@ export default function ResultsPage() {
   const city = searchParams.get('city') || ''
   const state = searchParams.get('state') || ''
   const zipcode = searchParams.get('zipcode') || ''
+  const page = parseInt(searchParams.get('page') || '1', 10)
+  const sortBy = searchParams.get('sort_by') || 'price_asc'
 
   // Memoize display query to prevent unnecessary re-renders
   const displayQuery = useMemo(() => {
@@ -103,16 +110,42 @@ export default function ResultsPage() {
   }, [displayQuery])
 
   const { data, isLoading, error } = useQuery<PropertiesResponse>({
-    queryKey: ['properties', address, city, state, zipcode],
-    queryFn: () => fetchProperties(address || undefined, city || undefined, state || undefined, zipcode || undefined),
+    queryKey: ['properties', address, city, state, zipcode, page, sortBy],
+    queryFn: () => fetchProperties(address || undefined, city || undefined, state || undefined, zipcode || undefined, page, sortBy),
     enabled: address.length > 0 || city.length > 0 || zipcode.length > 0,
   })
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (searchQuery.trim()) {
-      router.push(`/results?address=${encodeURIComponent(searchQuery.trim())}`)
+      router.push(`/results?address=${encodeURIComponent(searchQuery.trim())}&page=1&sort_by=${sortBy}`)
     }
+  }
+
+  const handlePageChange = (newPage: number) => {
+    const params = new URLSearchParams()
+    if (address) params.set('address', address)
+    if (city) params.set('city', city)
+    if (state) params.set('state', state)
+    if (zipcode) params.set('zipcode', zipcode)
+    params.set('page', newPage.toString())
+    params.set('sort_by', sortBy)
+    router.push(`/results?${params.toString()}`)
+    // Scroll to top of results
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleSortChange = (newSortBy: string) => {
+    const params = new URLSearchParams()
+    if (address) params.set('address', address)
+    if (city) params.set('city', city)
+    if (state) params.set('state', state)
+    if (zipcode) params.set('zipcode', zipcode)
+    params.set('page', '1') // Reset to page 1 when sorting changes
+    params.set('sort_by', newSortBy)
+    router.push(`/results?${params.toString()}`)
+    // Scroll to top of results
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   return (
@@ -140,6 +173,10 @@ export default function ResultsPage() {
             isLoading={isLoading}
             error={error}
             searchQuery={displayQuery}
+            currentPage={page}
+            onPageChange={handlePageChange}
+            sortBy={sortBy}
+            onSortChange={handleSortChange}
           />
         ) : (
           <div className="text-center py-12">

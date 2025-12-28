@@ -1,5 +1,5 @@
 """
-Script to populate database with first 500 properties from NWMLS API
+Script to populate database with first 1000 properties from NWMLS API
 """
 import sys
 import os
@@ -14,7 +14,7 @@ from services.property_transformer import transform_property, transform_media
 
 # API Configuration
 BEARER_TOKEN = "0ab805914c87f009210f3444be95e11b19e7cf6f"
-API_URL = "https://api-demo.mlsgrid.com/v2/Property?$filter=OriginatingSystemName%20eq%20'nwmls'%20and%20MlgCanView%20eq%20true&$expand=Media&$top=500"
+API_URL = "https://api-demo.mlsgrid.com/v2/Property?$filter=OriginatingSystemName%20eq%20'nwmls'%20and%20MlgCanView%20eq%20true&$expand=Media&$top=1000"
 
 headers = {
     "Authorization": f"Bearer {BEARER_TOKEN}",
@@ -37,7 +37,7 @@ def fetch_properties_from_api() -> List[Dict[str, Any]]:
     return properties
 
 
-def populate_database(database_url: str = None, limit: int = 500):
+def populate_database(database_url: str = None, limit: int = 1000):
     """Populate database with properties"""
     if database_url is None:
         # Use absolute path relative to project root
@@ -177,7 +177,7 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Populate database with NWMLS properties")
     parser.add_argument("--database", default="sqlite:///properties.db", help="Database URL")
-    parser.add_argument("--limit", type=int, default=500, help="Limit number of properties to insert")
+    parser.add_argument("--limit", type=int, default=1000, help="Limit number of properties to insert")
     
     args = parser.parse_args()
     

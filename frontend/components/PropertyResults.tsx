@@ -41,6 +41,10 @@ interface PropertyResultsProps {
   isLoading: boolean
   error: Error | null
   searchQuery: string
+  currentPage: number
+  onPageChange: (page: number) => void
+  sortBy: string
+  onSortChange: (sortBy: string) => void
 }
 
 export default function PropertyResults({
@@ -48,6 +52,10 @@ export default function PropertyResults({
   isLoading,
   error,
   searchQuery,
+  currentPage,
+  onPageChange,
+  sortBy,
+  onSortChange,
 }: PropertyResultsProps) {
   if (isLoading) {
     return (
@@ -91,10 +99,28 @@ export default function PropertyResults({
 
   return (
     <div className="mt-12">
-      <div className="mb-6">
+      <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
         <p className="text-gray-600 dark:text-gray-400">
           Found {data.total} {data.total === 1 ? 'property' : 'properties'} for &quot;{searchQuery}&quot;
         </p>
+        
+        {/* Sort Dropdown */}
+        <div className="flex items-center gap-2">
+          <label htmlFor="sort-select" className="text-sm text-gray-600 dark:text-gray-400">
+            Sort by:
+          </label>
+          <select
+            id="sort-select"
+            value={sortBy}
+            onChange={(e) => onSortChange(e.target.value)}
+            className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            aria-label="Sort properties"
+          >
+            <option value="price_asc">Price: Low to High</option>
+            <option value="price_desc">Price: High to Low</option>
+            <option value="sqft_desc">Square Feet</option>
+          </select>
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -174,10 +200,75 @@ export default function PropertyResults({
         ))}
       </div>
 
-      {data.hasMore && (
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-500 dark:text-gray-500">
-            Showing {data.properties.length} of {data.total} properties
+      {/* Pagination */}
+      {data.totalPages && data.totalPages > 1 && (
+        <div className="mt-8 flex flex-col items-center gap-4">
+          <div className="flex items-center gap-2">
+            {/* Previous Button */}
+            <button
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                currentPage === 1
+                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+              aria-label="Previous page"
+            >
+              Previous
+            </button>
+
+            {/* Page Numbers */}
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, data.totalPages || 1) }, (_, i) => {
+                let pageNum: number
+                const totalPages = data.totalPages || 1
+                if (totalPages <= 5) {
+                  pageNum = i + 1
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i
+                } else {
+                  pageNum = currentPage - 2 + i
+                }
+
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => onPageChange(pageNum)}
+                    className={`min-w-[40px] px-3 py-2 rounded-lg font-medium transition-colors ${
+                      currentPage === pageNum
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                    aria-label={`Go to page ${pageNum}`}
+                    aria-current={currentPage === pageNum ? 'page' : undefined}
+                  >
+                    {pageNum}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Next Button */}
+            <button
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage >= (data.totalPages || 1)}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                currentPage >= data.totalPages
+                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+              aria-label="Next page"
+            >
+              Next
+            </button>
+          </div>
+
+          {/* Page Info */}
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Showing {((currentPage - 1) * data.pageSize) + 1} to {Math.min(currentPage * data.pageSize, data.total)} of {data.total} properties
           </p>
         </div>
       )}
