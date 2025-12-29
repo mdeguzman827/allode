@@ -110,11 +110,16 @@ async def root():
 
 @app.post("/api/admin/populate")
 async def populate_database_endpoint(
-    limit: int = Query(500, ge=1, le=1000, description="Number of properties to populate (1-1000)")
+    limit: int = Query(500, ge=1, le=1000, description="Number of properties to populate (1-1000)"),
+    clear: bool = Query(False, description="Clear existing data before populating")
 ):
     """
     Admin endpoint to populate the database with properties from NWMLS API.
     This endpoint runs inside Railway's environment and can access the internal database.
+    
+    Parameters:
+    - limit: Number of properties to populate (1-1000)
+    - clear: If True, deletes all existing properties and media before populating
     
     Note: This is an admin endpoint. Consider adding authentication in production.
     """
@@ -129,6 +134,31 @@ async def populate_database_endpoint(
             if database_url.startswith("postgres://"):
                 database_url = database_url.replace("postgres://", "postgresql://", 1)
         
+        # Clear existing data if requested
+        if clear:
+            engine = get_engine(database_url)
+            session = get_session(engine)
+            try:
+                # Get counts before deletion
+                old_property_count = session.query(Property).count()
+                old_media_count = session.query(PropertyMedia).count()
+                
+                # Delete media first (due to foreign key constraints)
+                deleted_media = session.query(PropertyMedia).delete()
+                # Delete properties
+                deleted_properties = session.query(Property).delete()
+                session.commit()
+                
+                print(f"✓ Cleared {old_property_count} properties and {old_media_count} media items")
+            except Exception as clear_error:
+                session.rollback()
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Error clearing database: {str(clear_error)}"
+                )
+            finally:
+                session.close()
+        
         # Call populate function (runs synchronously)
         # Output will be logged to Railway logs
         populate_database(database_url=database_url, limit=limit)
@@ -142,13 +172,20 @@ async def populate_database_endpoint(
         finally:
             session.close()
         
+        message = f"Database populated successfully with up to {limit} properties"
+        if clear:
+            message = f"Database cleared and repopulated with up to {limit} properties"
+        
         return {
             "success": True,
-            "message": f"Database populated successfully with up to {limit} properties",
+            "message": message,
             "properties_inserted": property_count,
             "media_items": media_count,
-            "limit_requested": limit
+            "limit_requested": limit,
+            "cleared": clear
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500,
