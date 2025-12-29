@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -45,6 +46,41 @@ interface PropertyResultsProps {
   onPageChange: (page: number) => void
   sortBy: string
   onSortChange: (sortBy: string) => void
+}
+
+// Component to handle "No Image" placeholder with debug logging
+const NoImagePlaceholder = ({ property }: { property: Property }) => {
+  const hasLoggedRef = useRef(false)
+
+  useEffect(() => {
+    if (!hasLoggedRef.current) {
+      hasLoggedRef.current = true
+      // Verbose debug logging for missing images
+      console.warn('[NO IMAGE DATA] Property has no images:', {
+        propertyId: property.id,
+        mlsNumber: property.mlsNumber,
+        propertyAddress: property.address.full,
+        hasImagesArray: !!property.images,
+        imagesArray: property.images,
+        imagesArrayLength: property.images?.length || 0,
+        firstImageUrl: property.images?.[0]?.url || 'N/A',
+        firstImageObject: property.images?.[0] || null,
+        propertyData: {
+          id: property.id,
+          mlsNumber: property.mlsNumber,
+          price: property.price,
+          address: property.address,
+        },
+        timestamp: new Date().toISOString(),
+      })
+    }
+  }, [property])
+
+  return (
+    <div className="flex-shrink-0 w-48 h-48 bg-gray-200 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+      <span className="text-gray-400 text-sm">No Image</span>
+    </div>
+  )
 }
 
 export default function PropertyResults({
@@ -143,22 +179,51 @@ export default function PropertyResults({
                     className="w-48 h-48 object-cover rounded-lg"
                     onError={(e) => {
                       const target = e.currentTarget
+                      const attemptedUrl = target.src
+                      const originalImageUrl = property.images[0]?.url
+                      
+                      // Verbose debug logging for image load failure
+                      console.error('[IMAGE LOAD ERROR] Image failed to load:', {
+                        propertyId: property.id,
+                        mlsNumber: property.mlsNumber,
+                        propertyAddress: property.address.full,
+                        attemptedImageUrl: attemptedUrl,
+                        originalImageUrl: originalImageUrl,
+                        apiBaseUrl: API_URL,
+                        imageEndpoint: `${API_URL}/api/images/${property.id}/0`,
+                        propertyImagesArray: property.images,
+                        imagesArrayLength: property.images?.length || 0,
+                        firstImageObject: property.images[0],
+                        errorEvent: {
+                          type: e.type,
+                          target: {
+                            tagName: target.tagName,
+                            src: target.src,
+                            complete: target.complete,
+                            naturalWidth: target.naturalWidth,
+                            naturalHeight: target.naturalHeight,
+                          },
+                        },
+                        timestamp: new Date().toISOString(),
+                        userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'N/A',
+                      })
+                      
                       // Prevent infinite loop by checking if we've already set the fallback
                       if (!target.dataset.fallbackSet) {
                         target.dataset.fallbackSet = 'true'
+                        console.warn('[IMAGE FALLBACK] Setting fallback placeholder for property:', property.id)
                         // Use a data URI SVG as fallback (can't fail to load)
                         target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZTBlNGU5Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzljYTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='
                       } else {
                         // If fallback also failed, hide the image to prevent infinite loop
+                        console.error('[IMAGE FALLBACK ERROR] Fallback also failed, hiding image for property:', property.id)
                         target.style.display = 'none'
                       }
                     }}
                   />
                 </div>
               ) : (
-                <div className="flex-shrink-0 w-48 h-48 bg-gray-200 dark:bg-gray-800 rounded-lg flex items-center justify-center">
-                  <span className="text-gray-400 text-sm">No Image</span>
-                </div>
+                <NoImagePlaceholder property={property} />
               )}
 
               {/* Property Details */}

@@ -13,12 +13,21 @@ export default function Header() {
         >
           Allode
         </Link>
-        <Link 
-          href="/" 
-          className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
-        >
-          New Search
-        </Link>
+        <nav className="flex items-center gap-6">
+          <Link 
+            href="/contact" 
+            className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+            aria-label="Contact us"
+          >
+            Contact
+          </Link>
+          <Link 
+            href="/" 
+            className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+          >
+            New Search
+          </Link>
+        </nav>
       </div>
     </header>
   )
