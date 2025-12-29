@@ -142,7 +142,16 @@ export default function PropertyResults({
                     alt={property.address.full}
                     className="w-48 h-48 object-cover rounded-lg"
                     onError={(e) => {
-                      e.currentTarget.src = 'https://via.placeholder.com/192x192?text=No+Image'
+                      const target = e.currentTarget
+                      // Prevent infinite loop by checking if we've already set the fallback
+                      if (!target.dataset.fallbackSet) {
+                        target.dataset.fallbackSet = 'true'
+                        // Use a data URI SVG as fallback (can't fail to load)
+                        target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZTBlNGU5Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzljYTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='
+                      } else {
+                        // If fallback also failed, hide the image to prevent infinite loop
+                        target.style.display = 'none'
+                      }
                     }}
                   />
                 </div>
