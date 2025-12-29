@@ -318,7 +318,12 @@ async def autocomplete(
                     Property.street_number.isnot(None),
                     Property.city.isnot(None)
                 )
-            ).group_by(Property.unparsed_address).limit(address_limit).all()
+            ).group_by(
+                Property.unparsed_address,
+                Property.city,
+                Property.state_or_province,
+                Property.id
+            ).limit(address_limit).all()
             
             for unparsed_address, city, state, prop_id in address_prefix_query:
                 if unparsed_address:
@@ -347,7 +352,12 @@ async def autocomplete(
                         Property.street_number.isnot(None),
                         Property.city.isnot(None)
                     )
-                ).group_by(Property.unparsed_address).limit((limit - len(suggestions)) * 2).all()
+                ).group_by(
+                    Property.unparsed_address,
+                    Property.city,
+                    Property.state_or_province,
+                    Property.id
+                ).limit((limit - len(suggestions)) * 2).all()
                 
                 address_contains_query = [
                     addr for addr in address_contains_query 
@@ -436,7 +446,12 @@ async def autocomplete(
                     Property.street_number.isnot(None),
                     Property.city.isnot(None)
                 )
-            ).group_by(Property.unparsed_address).limit(address_limit).all()
+            ).group_by(
+                Property.unparsed_address,
+                Property.city,
+                Property.state_or_province,
+                Property.id
+            ).limit(address_limit).all()
             
             for unparsed_address, city, state, prop_id in address_query:
                 if unparsed_address:
