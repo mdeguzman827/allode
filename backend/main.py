@@ -19,7 +19,7 @@ load_dotenv()
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from database.models import get_engine, get_session, Property, PropertyMedia
+from database.models import get_engine, get_session, Property, PropertyMedia, init_database
 from services.property_transformer import transform_for_frontend
 
 # In-memory image cache: {cache_key: (image_data, content_type, expires_at)}
@@ -42,6 +42,32 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database tables on startup if they don't exist"""
+    try:
+        # Get database URL from environment variable
+        database_url = os.getenv("DATABASE_URL")
+        
+        if not database_url:
+            # Fallback to SQLite for local development
+            project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            database_url = f"sqlite:///{os.path.join(project_root, 'properties.db')}"
+        else:
+            # Railway/Heroku provide postgres:// but SQLAlchemy needs postgresql://
+            if database_url.startswith("postgres://"):
+                database_url = database_url.replace("postgres://", "postgresql://", 1)
+        
+        # Initialize database (creates tables if they don't exist)
+        init_database(database_url)
+        print("✓ Database tables initialized successfully")
+    except Exception as e:
+        # Log error but don't crash the app - tables might already exist
+        print(f"⚠️  Database initialization warning: {e}")
+        print("   (This is normal if tables already exist)")
+
 
 # Database dependency
 def get_db():
