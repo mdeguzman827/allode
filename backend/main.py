@@ -53,6 +53,10 @@ def get_db():
         # Fallback to SQLite for local development
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         database_url = f"sqlite:///{os.path.join(project_root, 'properties.db')}"
+    else:
+        # Railway/Heroku provide postgres:// but SQLAlchemy needs postgresql://
+        if database_url.startswith("postgres://"):
+            database_url = database_url.replace("postgres://", "postgresql://", 1)
     
     engine = get_engine(database_url)
     session = get_session(engine)
