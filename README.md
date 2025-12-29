@@ -1,6 +1,6 @@
 # Allode Real Estate Platform
 
-A real estate platform with property search, PDF automation, and AI features.
+A real estate platform with property search, PDF automation, and AI features. Thanks for reading!
 
 ## Architecture
 
