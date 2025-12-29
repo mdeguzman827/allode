@@ -21,6 +21,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database.models import get_engine, get_session, Property, PropertyMedia, init_database
 from services.property_transformer import transform_for_frontend
+from scripts.populate_database import populate_database
 
 # In-memory image cache: {cache_key: (image_data, content_type, expires_at)}
 image_cache = {}
@@ -105,6 +106,54 @@ async def root():
             "search": "/api/properties/search"
         }
     }
+
+
+@app.post("/api/admin/populate")
+async def populate_database_endpoint(
+    limit: int = Query(500, ge=1, le=1000, description="Number of properties to populate (1-1000)")
+):
+    """
+    Admin endpoint to populate the database with properties from NWMLS API.
+    This endpoint runs inside Railway's environment and can access the internal database.
+    
+    Note: This is an admin endpoint. Consider adding authentication in production.
+    """
+    try:
+        # Get database URL from environment (same logic as get_db)
+        database_url = os.getenv("DATABASE_URL")
+        if not database_url:
+            project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            database_url = f"sqlite:///{os.path.join(project_root, 'properties.db')}"
+        else:
+            # Railway/Heroku provide postgres:// but SQLAlchemy needs postgresql://
+            if database_url.startswith("postgres://"):
+                database_url = database_url.replace("postgres://", "postgresql://", 1)
+        
+        # Call populate function (runs synchronously)
+        # Output will be logged to Railway logs
+        populate_database(database_url=database_url, limit=limit)
+        
+        # Get final counts to return
+        engine = get_engine(database_url)
+        session = get_session(engine)
+        try:
+            property_count = session.query(Property).count()
+            media_count = session.query(PropertyMedia).count()
+        finally:
+            session.close()
+        
+        return {
+            "success": True,
+            "message": f"Database populated successfully with up to {limit} properties",
+            "properties_inserted": property_count,
+            "media_items": media_count,
+            "limit_requested": limit
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error populating database: {str(e)}"
+        )
 
 
 @app.get("/api/properties")
