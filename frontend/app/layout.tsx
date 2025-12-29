@@ -7,7 +7,7 @@ import Header from '@/components/Header'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Allode - Real Estate Search',
+  title: 'Allode - The Flat Fee Real Estate Brokerage for Buyers',
   description: 'Search for properties with ease',
 }
 
