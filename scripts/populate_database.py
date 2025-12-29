@@ -37,12 +37,30 @@ def fetch_properties_from_api() -> List[Dict[str, Any]]:
     return properties
 
 
+def get_database_url(database_url: str = None):
+    """Get database URL from parameter, environment, or default to SQLite"""
+    # If provided as parameter, use it
+    if database_url:
+        # Handle postgres:// to postgresql:// conversion
+        if database_url.startswith("postgres://"):
+            database_url = database_url.replace("postgres://", "postgresql://", 1)
+        return database_url
+    
+    # Check for DATABASE_URL environment variable (Railway, Heroku, etc.)
+    env_database_url = os.getenv("DATABASE_URL")
+    if env_database_url:
+        # Railway/Heroku provide postgres:// but SQLAlchemy needs postgresql://
+        if env_database_url.startswith("postgres://"):
+            env_database_url = env_database_url.replace("postgres://", "postgresql://", 1)
+        return env_database_url
+    
+    # Default to SQLite for local development
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return f"sqlite:///{os.path.join(project_root, 'properties.db')}"
+
 def populate_database(database_url: str = None, limit: int = 1000):
     """Populate database with properties"""
-    if database_url is None:
-        # Use absolute path relative to project root
-        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        database_url = f"sqlite:///{os.path.join(project_root, 'properties.db')}"
+    database_url = get_database_url(database_url)
     
     print("=" * 60)
     print("Populating Database with Properties")
@@ -176,10 +194,12 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser(description="Populate database with NWMLS properties")
-    parser.add_argument("--database", default="sqlite:///properties.db", help="Database URL")
+    parser.add_argument("--database", default=None, help="Database URL (overrides DATABASE_URL env var)")
     parser.add_argument("--limit", type=int, default=1000, help="Limit number of properties to insert")
     
     args = parser.parse_args()
     
-    populate_database(args.database, args.limit)
+    # Use get_database_url to handle environment variable and defaults
+    database_url = get_database_url(args.database)
+    populate_database(database_url, args.limit)
 

@@ -9,10 +9,24 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database.models import init_database
 
+def get_database_url():
+    """Get database URL from environment or default to SQLite"""
+    # Check for DATABASE_URL environment variable (Railway, Heroku, etc.)
+    database_url = os.getenv("DATABASE_URL")
+    
+    if database_url:
+        # Railway/Heroku provide postgres:// but SQLAlchemy needs postgresql://
+        if database_url.startswith("postgres://"):
+            database_url = database_url.replace("postgres://", "postgresql://", 1)
+        return database_url
+    
+    # Default to SQLite for local development
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return f"sqlite:///{os.path.join(project_root, 'properties.db')}"
+
 def main():
     """Initialize database tables"""
-    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    database_url = f"sqlite:///{os.path.join(project_root, 'properties.db')}"
+    database_url = get_database_url()
     
     print("=" * 60)
     print("Initializing Database")
