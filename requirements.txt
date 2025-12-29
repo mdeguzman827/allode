@@ -13,6 +13,9 @@ python-multipart>=0.0.6
 # Data processing
 pandas>=2.0.0
 
+# Environment variables
+python-dotenv>=1.0.0
+
 
 
 

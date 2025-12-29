@@ -12,6 +12,11 @@ from datetime import datetime, timedelta
 
 import sys
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database.models import get_engine, get_session, Property, PropertyMedia
@@ -24,9 +29,15 @@ CACHE_DURATION_HOURS = 24  # Cache images for 24 hours
 app = FastAPI(title="Allode Property API", version="1.0.0")
 
 # CORS middleware for Next.js frontend
+# Get allowed origins from environment variable, fallback to localhost for development
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:3000,http://localhost:3001"
+).split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],  # Next.js default ports
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -35,9 +46,14 @@ app.add_middleware(
 # Database dependency
 def get_db():
     """Get database session"""
-    # Use absolute path relative to project root
-    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    database_url = f"sqlite:///{os.path.join(project_root, 'properties.db')}"
+    # Get database URL from environment variable, fallback to SQLite for local development
+    database_url = os.getenv("DATABASE_URL")
+    
+    if not database_url:
+        # Fallback to SQLite for local development
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        database_url = f"sqlite:///{os.path.join(project_root, 'properties.db')}"
+    
     engine = get_engine(database_url)
     session = get_session(engine)
     try:
