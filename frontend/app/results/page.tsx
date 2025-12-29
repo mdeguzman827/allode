@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import PropertySearch from '@/components/PropertySearch'
@@ -101,18 +101,39 @@ export default function ResultsPage() {
   const [searchQuery, setSearchQuery] = useState(displayQuery)
 
   // Sync searchQuery state with URL params only if it actually changed
-  // Only depend on displayQuery to avoid unnecessary re-runs
+  // Use useMemo to stabilize the comparison and prevent unnecessary updates
   useEffect(() => {
-    setSearchQuery((prevQuery) => {
-      // Only update if the display query actually changed
-      return prevQuery !== displayQuery ? displayQuery : prevQuery
-    })
-  }, [displayQuery])
+    if (displayQuery !== searchQuery) {
+      setSearchQuery(displayQuery)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayQuery]) // Only depend on displayQuery, searchQuery is intentionally excluded
 
+  // Normalize search params - convert empty strings to undefined for stable query keys
+  const normalizedAddress = useMemo(() => address || undefined, [address])
+  const normalizedCity = useMemo(() => city || undefined, [city])
+  const normalizedState = useMemo(() => state || undefined, [state])
+  const normalizedZipcode = useMemo(() => zipcode || undefined, [zipcode])
+  
+  // Check if we have any search criteria
+  const hasSearchCriteria = useMemo(() => {
+    return !!(normalizedAddress || normalizedCity || normalizedZipcode)
+  }, [normalizedAddress, normalizedCity, normalizedZipcode])
+  
+  // Memoize the query function to prevent unnecessary re-renders
+  const queryFn = useCallback(() => {
+    return fetchProperties(normalizedAddress, normalizedCity, normalizedState, normalizedZipcode, page, sortBy)
+  }, [normalizedAddress, normalizedCity, normalizedState, normalizedZipcode, page, sortBy])
+  
   const { data, isLoading, error } = useQuery<PropertiesResponse>({
-    queryKey: ['properties', address, city, state, zipcode, page, sortBy],
-    queryFn: () => fetchProperties(address || undefined, city || undefined, state || undefined, zipcode || undefined, page, sortBy),
-    enabled: address.length > 0 || city.length > 0 || zipcode.length > 0,
+    queryKey: ['properties', normalizedAddress, normalizedCity, normalizedState, normalizedZipcode, page, sortBy],
+    queryFn,
+    enabled: hasSearchCriteria,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   })
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
@@ -164,7 +185,7 @@ export default function ResultsPage() {
 
       {/* Results */}
       <div className="flex-1 max-w-7xl mx-auto w-full px-4 py-8">
-        {address || city || zipcode ? (
+        {hasSearchCriteria ? (
           <PropertyResults
             data={data ? {
               ...data,
