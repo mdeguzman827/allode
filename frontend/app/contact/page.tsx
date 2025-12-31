@@ -302,24 +302,24 @@ export default function ContactPage() {
               <p>
                 <span className="font-medium text-gray-900 dark:text-gray-100">Email:</span>{' '}
                 <a
-                  href="mailto:allodeinc@gmail.com"
+                  href="mailto:info@allode.com"
                   className="text-blue-600 dark:text-blue-400 hover:underline"
                 >
-                  allodeinc@gmail.com
+                  info@allode.com
                 </a>
               </p>
               <p>
                 <span className="font-medium text-gray-900 dark:text-gray-100">Phone:</span>{' '}
                 <a
-                  href="tel:+19168950800"
+                  href="tel:+15551234567"
                   className="text-blue-600 dark:text-blue-400 hover:underline"
                 >
-                  (916) 895-0800
+                  (555) 123-4567
                 </a>
               </p>
               <p>
                 <span className="font-medium text-gray-900 dark:text-gray-100">Business Hours:</span>{' '}
-                Monday - Friday, 9:00 AM - 6:00 PM PST
+                Monday - Friday, 9:00 AM - 6:00 PM EST
               </p>
             </div>
           </div>
