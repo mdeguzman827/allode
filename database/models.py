@@ -63,7 +63,12 @@ class Property(Base):
     
     # Media count (stored separately, full media in separate table)
     media_count = Column(Integer, default=0)
-    primary_image_url = Column(Text)
+    primary_image_url = Column(Text)  # Original NWMLS URL (keep for reference)
+    
+    # R2 storage fields for primary image
+    primary_image_r2_key = Column(String, index=True)  # e.g., "properties/NWM123/0.jpg"
+    primary_image_r2_url = Column(Text)  # Full CDN URL
+    primary_image_stored_at = Column(DateTime)  # When uploaded to R2
     
     # Additional fields - Property Features
     appliances = Column(Text)
@@ -173,7 +178,15 @@ class PropertyMedia(Base):
     id = Column(String, primary_key=True)
     property_id = Column(String, nullable=False, index=True)  # Foreign key to properties.id
     media_key = Column(String)
-    media_url = Column(Text)
+    media_url = Column(Text)  # Original NWMLS URL (keep for reference)
+    
+    # R2 storage fields
+    r2_key = Column(String, index=True)  # e.g., "properties/NWM123/1.jpg"
+    r2_url = Column(Text)  # Full CDN URL
+    stored_at = Column(DateTime)  # When uploaded to R2
+    file_size = Column(Integer)  # Size in bytes
+    content_type = Column(String)  # e.g., "image/jpeg" or "image/webp"
+    
     order = Column(Integer, default=0)
     preferred_photo_yn = Column(Boolean, default=False)
     image_width = Column(Integer)

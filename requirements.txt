@@ -17,6 +17,12 @@ pandas>=2.0.0
 # Environment variables
 python-dotenv>=1.0.0
 
+# Cloudflare R2 storage (S3-compatible API)
+boto3>=1.28.0
+
+# Image processing (optional, for optimization)
+Pillow>=10.0.0
+
 
 
 

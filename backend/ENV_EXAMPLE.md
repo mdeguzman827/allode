@@ -17,8 +17,19 @@ ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
 DATABASE_URL=
 
 # NWMLS API Credentials (if needed for data fetching)
-NWMLS_USERNAME=your_username_here
-NWMLS_PASSWORD=your_password_here
+NWMLS_USERNAME=130725
+NWMLS_PASSWORD=SexyDexy082790/
+
+# Cloudflare R2 Storage Configuration
+# Get these from Cloudflare Dashboard > R2 > Manage R2 API Tokens
+# Account ID is found in the right sidebar of your Cloudflare dashboard
+CLOUDFLARE_ACCOUNT_ID=1cb2ffe1db4f0657b01f8c304df0a36f
+CLOUDFLARE_R2_ACCESS_KEY_ID=995b19a393612577dedacbf7923adb9c
+CLOUDFLARE_R2_SECRET_ACCESS_KEY=4325c657d5232abc984e6505fa54687f83ed4f6340bb2e6d4befb2bf2804c57a
+CLOUDFLARE_R2_BUCKET_NAME=allode-property-images
+# Optional: Custom domain for CDN (e.g., images.yourdomain.com)
+# If not set, will use R2's default public URL
+# CLOUDFLARE_R2_CDN_DOMAIN=images.yourdomain.com
 
 # Optional: Port configuration (Railway will set PORT automatically)
 # PORT=8000

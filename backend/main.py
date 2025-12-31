@@ -15,17 +15,52 @@ import os
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
-load_dotenv()
+# Explicitly look in backend directory first, then project root as fallback
+backend_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(backend_dir)
+
+# Try backend/.env first (preferred location)
+backend_env = os.path.join(backend_dir, '.env')
+if os.path.exists(backend_env):
+    load_dotenv(dotenv_path=backend_env)
+    print(f"✓ Loaded environment variables from: {backend_env}")
+else:
+    # Fallback to project root .env
+    root_env = os.path.join(project_root, '.env')
+    if os.path.exists(root_env):
+        load_dotenv(dotenv_path=root_env)
+        print(f"✓ Loaded environment variables from: {root_env}")
+    else:
+        # Last resort: try default load_dotenv() behavior
+        load_dotenv()
+        print("⚠️  No .env file found in backend/ or project root")
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database.models import get_engine, get_session, Property, PropertyMedia, init_database
 from services.property_transformer import transform_for_frontend
 from scripts.populate_database import populate_database
+from services.r2_storage import R2Storage
+from services.image_processor import ImageProcessor
+from fastapi.responses import RedirectResponse
 
 # In-memory image cache: {cache_key: (image_data, content_type, expires_at)}
 image_cache = {}
 CACHE_DURATION_HOURS = 24  # Cache images for 24 hours
+
+# Initialize R2 storage and image processor (will fail gracefully if not configured)
+try:
+    r2_storage = R2Storage()
+    image_processor = ImageProcessor()
+    R2_ENABLED = True
+    print("✓ R2 storage initialized successfully")
+except (ValueError, Exception) as e:
+    print(f"⚠️  Warning: R2 storage not configured: {str(e)}")
+    print("   Make sure CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_R2_ACCESS_KEY_ID, and")
+    print("   CLOUDFLARE_R2_SECRET_ACCESS_KEY are set in backend/.env")
+    r2_storage = None
+    image_processor = None
+    R2_ENABLED = False
 
 app = FastAPI(title="Allode Property API", version="1.0.0")
 
@@ -544,6 +579,36 @@ async def get_property_by_id(
         raise HTTPException(status_code=500, detail=f"Error fetching property: {str(e)}")
 
 
+@app.post("/api/properties/{property_id}/process-images")
+async def process_property_images(
+    property_id: str,
+    force: bool = Query(False, description="Force reprocess even if already stored"),
+    db: Session = Depends(get_db)
+):
+    """
+    Trigger background processing of property images.
+    Downloads from NWMLS and uploads to R2.
+    """
+    if not R2_ENABLED or not image_processor:
+        raise HTTPException(
+            status_code=503,
+            detail="R2 storage not configured. Please configure Cloudflare R2 credentials."
+        )
+    
+    try:
+        results = image_processor.process_property_images(
+            property_id=property_id,
+            db=db,
+            force_reprocess=force
+        )
+        return results
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing images: {str(e)}"
+        )
+
+
 @app.get("/api/images/{property_id}/{image_index}")
 async def get_property_image(
     property_id: str,
@@ -551,35 +616,66 @@ async def get_property_image(
     db: Session = Depends(get_db)
 ):
     """
-    Proxy endpoint for property images with caching.
-    Fetches images from NWMLS API and caches them to avoid 429 errors on refresh.
+    Serve property images from Cloudflare R2 CDN.
+    Falls back to proxying from NWMLS if not yet stored in R2.
     """
     try:
-        # Check cache first
+        property_obj = db.query(Property).filter_by(id=property_id).first()
+        if not property_obj:
+            raise HTTPException(status_code=404, detail="Property not found")
+        
+        r2_key = None
+        r2_url = None
+        
+        # Get R2 key based on image index
+        if image_index == 0:
+            # Primary image
+            r2_key = property_obj.primary_image_r2_key
+            r2_url = property_obj.primary_image_r2_url
+        else:
+            # Media images
+            media_items = db.query(PropertyMedia).filter_by(
+                property_id=property_id
+            ).order_by(PropertyMedia.order).all()
+            
+            # Filter out primary image duplicates
+            primary_url = property_obj.primary_image_url
+            filtered_media = [
+                m for m in media_items 
+                if m.media_url and m.media_url != primary_url
+            ]
+            
+            media_index = image_index - 1
+            if media_index < len(filtered_media):
+                media_item = filtered_media[media_index]
+                r2_key = media_item.r2_key
+                r2_url = media_item.r2_url
+        
+        # If stored in R2, redirect to CDN URL
+        if r2_key and r2_url and R2_ENABLED:
+            return RedirectResponse(url=r2_url, status_code=302)
+        
+        # Fallback: If not in R2 yet, use old proxy method
+        # Check in-memory cache first
         cache_key = f"{property_id}_{image_index}"
         if cache_key in image_cache:
             cached_data, content_type, expires_at = image_cache[cache_key]
             if datetime.now() < expires_at:
-                # Return cached image with proper headers
                 return Response(
                     content=cached_data,
                     media_type=content_type,
                     headers={
-                        "Cache-Control": "public, max-age=86400",  # 24 hours
+                        "Cache-Control": "public, max-age=86400",
                         "ETag": f'"{cache_key}"',
                     }
                 )
             else:
-                # Cache expired, remove it
                 del image_cache[cache_key]
 
-        # Optimize: Query both PropertyMedia and Property in parallel
-        # Query PropertyMedia table and Property table
+        # Query PropertyMedia table
         media_items = db.query(PropertyMedia).filter_by(
             property_id=property_id
         ).order_by(PropertyMedia.order).all()
-        
-        property_obj = db.query(Property).filter_by(id=property_id).first()
         
         image_url = None
         
@@ -605,12 +701,11 @@ async def get_property_image(
         if not image_url:
             raise HTTPException(status_code=404, detail="Image not found")
         
-        # Fetch image from original URL with optimized settings
+        # Fallback: Proxy from original source
         try:
-            # Use stream=True for memory efficiency and set connection timeout
             response = requests.get(
                 image_url,
-                timeout=(5, 10),  # (connect timeout, read timeout)
+                timeout=(5, 10),
                 stream=True,
                 headers={
                     'User-Agent': 'Mozilla/5.0 (compatible; Allode/1.0)',
@@ -625,12 +720,11 @@ async def get_property_image(
             expires_at = datetime.now() + timedelta(hours=CACHE_DURATION_HOURS)
             image_cache[cache_key] = (image_data, content_type, expires_at)
             
-            # Return with optimized headers for fast loading
             return Response(
                 content=image_data,
                 media_type=content_type,
                 headers={
-                    "Cache-Control": "public, max-age=86400",  # 24 hours browser cache
+                    "Cache-Control": "public, max-age=3600",  # 1 hour for fallback
                     "ETag": f'"{cache_key}"',
                     "X-Content-Type-Options": "nosniff",
                 }
