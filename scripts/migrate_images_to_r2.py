@@ -34,7 +34,7 @@ def migrate_all_properties(batch_size: int = 10, limit: int = None):
     """Migrate all property images to R2"""
     try:
         # Get database URL (same logic as migrate_r2_columns.py)
-        database_url = os.getenv("DATABASE_URL")
+        database_url = os.getenv("DATABASE_PUBLIC_URL")
         if not database_url:
             project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             database_path = os.path.join(project_root, 'properties.db')

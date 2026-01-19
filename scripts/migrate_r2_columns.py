@@ -13,7 +13,7 @@ from sqlalchemy import text
 def migrate_database():
     """Add R2 storage columns to existing database"""
     # Get database URL
-    database_url = os.getenv("DATABASE_URL")
+    database_url = os.getenv("DATABASE_PUBLIC_URL")
     if not database_url:
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         database_path = os.path.join(project_root, 'properties.db')
