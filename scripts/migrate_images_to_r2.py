@@ -5,8 +5,26 @@ import sys
 import os
 import argparse
 from sqlalchemy.orm import Session
+from dotenv import load_dotenv
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Load environment variables from .env file
+# Try backend/.env first, then project root .env
+backend_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'backend')
+backend_env = os.path.join(backend_dir, '.env')
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+root_env = os.path.join(project_root, '.env')
+
+if os.path.exists(backend_env):
+    load_dotenv(dotenv_path=backend_env)
+    print(f"✓ Loaded environment variables from: {backend_env}")
+elif os.path.exists(root_env):
+    load_dotenv(dotenv_path=root_env)
+    print(f"✓ Loaded environment variables from: {root_env}")
+else:
+    load_dotenv()  # Try default location
+    print("⚠️  No .env file found, using system environment variables")
 
 from database.models import get_engine, get_session, Property
 from services.image_processor import ImageProcessor
@@ -15,12 +33,29 @@ from services.image_processor import ImageProcessor
 def migrate_all_properties(batch_size: int = 10, limit: int = None):
     """Migrate all property images to R2"""
     try:
-        engine = get_engine()
+        # Get database URL (same logic as migrate_r2_columns.py)
+        database_url = os.getenv("DATABASE_URL")
+        if not database_url:
+            project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            database_path = os.path.join(project_root, 'properties.db')
+            database_url = f"sqlite:///{database_path}"
+        else:
+            if database_url.startswith("postgres://"):
+                database_url = database_url.replace("postgres://", "postgresql://", 1)
+        
+        print("=" * 60)
+        print("Image Migration: Uploading Images to Cloudflare R2")
+        print("=" * 60)
+        print(f"Database: {database_url}\n")
+        
+        engine = get_engine(database_url)  # Pass the database_url
         session = get_session(engine)
         processor = ImageProcessor()
     except Exception as e:
         print(f"Error initializing: {str(e)}")
         print("Make sure R2 credentials are configured in environment variables.")
+        import traceback
+        traceback.print_exc()
         return
     
     try:
