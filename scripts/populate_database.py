@@ -46,8 +46,13 @@ def get_database_url(database_url: str = None):
             database_url = database_url.replace("postgres://", "postgresql://", 1)
         return database_url
     
-    # Check for DATABASE_URL environment variable (Railway, Heroku, etc.)
-    env_database_url = os.getenv("DATABASE_URL")
+    # Check for DATABASE_PUBLIC_URL first (preferred for external access)
+    env_database_url = os.getenv("DATABASE_PUBLIC_URL")
+    
+    # Fallback to DATABASE_URL if DATABASE_PUBLIC_URL is not set
+    if not env_database_url:
+        env_database_url = os.getenv("DATABASE_URL")
+    
     if env_database_url:
         # Railway/Heroku provide postgres:// but SQLAlchemy needs postgresql://
         if env_database_url.startswith("postgres://"):

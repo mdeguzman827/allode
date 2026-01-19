@@ -11,8 +11,12 @@ from database.models import init_database
 
 def get_database_url():
     """Get database URL from environment or default to SQLite"""
-    # Check for DATABASE_URL environment variable (Railway, Heroku, etc.)
-    database_url = os.getenv("DATABASE_URL")
+    # Check for DATABASE_PUBLIC_URL first (preferred for external access)
+    database_url = os.getenv("DATABASE_PUBLIC_URL")
+    
+    # Fallback to DATABASE_URL if DATABASE_PUBLIC_URL is not set
+    if not database_url:
+        database_url = os.getenv("DATABASE_URL")
     
     if database_url:
         # Railway/Heroku provide postgres:// but SQLAlchemy needs postgresql://
