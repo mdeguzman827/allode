@@ -174,7 +174,7 @@ export default function PropertyResults({
               {property.images && property.images.length > 0 && property.images[0].url ? (
                 <div className="flex-shrink-0">
                   <img
-                    src={`${API_URL}/api/images/${property.id}/0`}
+                    src={property.images[0].url}
                     alt={property.address.full}
                     className="w-48 h-48 object-cover rounded-lg"
                     onError={(e) => {

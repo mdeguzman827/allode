@@ -1,6 +1,7 @@
 """
 Background job to download images from NWMLS and upload to R2
 """
+import time
 import requests
 from datetime import datetime
 from typing import Optional
@@ -12,7 +13,8 @@ from database.models import Property, PropertyMedia
 class ImageProcessor:
     """Process and store property images"""
     
-    def __init__(self):
+    def __init__(self, rate_limiter=None):
+        self.rate_limiter = rate_limiter
         try:
             self.r2_storage = R2Storage()
         except ValueError as e:
@@ -147,6 +149,9 @@ class ImageProcessor:
             dict with r2_key, r2_url, file_size, content_type
         """
         try:
+            if self.rate_limiter:
+                self.rate_limiter.wait()
+            
             # Download from NWMLS
             response = requests.get(
                 source_url,

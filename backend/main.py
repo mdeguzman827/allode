@@ -42,7 +42,6 @@ from services.property_transformer import transform_for_frontend
 from scripts.populate_database import populate_database
 from services.r2_storage import R2Storage
 from services.image_processor import ImageProcessor
-from fastapi.responses import RedirectResponse
 
 # In-memory image cache: {cache_key: (image_data, content_type, expires_at)}
 image_cache = {}
@@ -616,7 +615,8 @@ async def get_property_image(
     db: Session = Depends(get_db)
 ):
     """
-    Serve property images from Cloudflare R2 CDN.
+    Get property image URL (R2 CDN or fallback to original).
+    Returns JSON with image URL instead of redirecting.
     Falls back to proxying from NWMLS if not yet stored in R2.
     """
     try:
@@ -626,12 +626,14 @@ async def get_property_image(
         
         r2_key = None
         r2_url = None
+        fallback_url = None
         
         # Get R2 key based on image index
         if image_index == 0:
             # Primary image
             r2_key = property_obj.primary_image_r2_key
             r2_url = property_obj.primary_image_r2_url
+            fallback_url = property_obj.primary_image_url
         else:
             # Media images
             media_items = db.query(PropertyMedia).filter_by(
@@ -650,88 +652,29 @@ async def get_property_image(
                 media_item = filtered_media[media_index]
                 r2_key = media_item.r2_key
                 r2_url = media_item.r2_url
+                fallback_url = media_item.media_url
         
-        # If stored in R2, redirect to CDN URL
+        # If stored in R2, return R2 URL in JSON response
         if r2_key and r2_url and R2_ENABLED:
-            return RedirectResponse(url=r2_url, status_code=302)
+            return {
+                "url": r2_url,
+                "source": "r2",
+                "property_id": property_id,
+                "image_index": image_index
+            }
         
-        # Fallback: If not in R2 yet, use old proxy method
-        # Check in-memory cache first
-        cache_key = f"{property_id}_{image_index}"
-        if cache_key in image_cache:
-            cached_data, content_type, expires_at = image_cache[cache_key]
-            if datetime.now() < expires_at:
-                return Response(
-                    content=cached_data,
-                    media_type=content_type,
-                    headers={
-                        "Cache-Control": "public, max-age=86400",
-                        "ETag": f'"{cache_key}"',
-                    }
-                )
-            else:
-                del image_cache[cache_key]
-
-        # Query PropertyMedia table
-        media_items = db.query(PropertyMedia).filter_by(
-            property_id=property_id
-        ).order_by(PropertyMedia.order).all()
+        # If R2 URL not available, return fallback URL
+        if fallback_url:
+            # Return fallback URL (frontend can use this directly)
+            return {
+                "url": fallback_url,
+                "source": "original",
+                "property_id": property_id,
+                "image_index": image_index
+            }
         
-        image_url = None
-        
-        # Image index mapping matches transform_for_frontend:
-        # Index 0 = primary_image_url (always first)
-        # Index 1+ = PropertyMedia entries (excluding any that match primary_image_url)
-        if image_index == 0:
-            # Index 0 is always the primary image
-            if property_obj and property_obj.primary_image_url:
-                image_url = property_obj.primary_image_url
-        elif image_index > 0 and media_items:
-            # Filter out PropertyMedia entries that match primary_image_url (to avoid duplicates)
-            primary_url = property_obj.primary_image_url if property_obj else None
-            filtered_media = [m for m in media_items if m.media_url and m.media_url != primary_url]
-            
-            # Index 1+ maps to filtered PropertyMedia entries
-            media_index = image_index - 1
-            if media_index < len(filtered_media):
-                media_item = filtered_media[media_index]
-                if media_item.media_url:
-                    image_url = media_item.media_url
-        
-        if not image_url:
-            raise HTTPException(status_code=404, detail="Image not found")
-        
-        # Fallback: Proxy from original source
-        try:
-            response = requests.get(
-                image_url,
-                timeout=(5, 10),
-                stream=True,
-                headers={
-                    'User-Agent': 'Mozilla/5.0 (compatible; Allode/1.0)',
-                }
-            )
-            response.raise_for_status()
-            
-            image_data = response.content
-            content_type = response.headers.get('Content-Type', 'image/jpeg')
-            
-            # Cache the image
-            expires_at = datetime.now() + timedelta(hours=CACHE_DURATION_HOURS)
-            image_cache[cache_key] = (image_data, content_type, expires_at)
-            
-            return Response(
-                content=image_data,
-                media_type=content_type,
-                headers={
-                    "Cache-Control": "public, max-age=3600",  # 1 hour for fallback
-                    "ETag": f'"{cache_key}"',
-                    "X-Content-Type-Options": "nosniff",
-                }
-            )
-            
-        except requests.exceptions.RequestException as e:
-            raise HTTPException(status_code=502, detail=f"Failed to fetch image: {str(e)}")
+        # No image found
+        raise HTTPException(status_code=404, detail="Image not found")
     
     except HTTPException:
         raise

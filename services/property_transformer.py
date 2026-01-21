@@ -304,8 +304,10 @@ def transform_for_frontend(property_obj, media_items: Optional[List] = None) -> 
         sorted_media = sorted(media_items, key=lambda m: m.order if m.order is not None else 999)
         for media in sorted_media:
             if media.media_url:
+                # Prioritize R2 URL, fallback to original URL
+                image_url = media.r2_url if media.r2_url else media.media_url
                 images.append({
-                    "url": media.media_url,  # Frontend will use proxy endpoint, this is just for reference
+                    "url": image_url,
                     "order": media.order if media.order is not None else len(images),
                     "type": media.media_category or "photo",
                     "width": media.image_width,
@@ -315,12 +317,18 @@ def transform_for_frontend(property_obj, media_items: Optional[List] = None) -> 
     
     # Always include primary_image_url if available (either as fallback or as first image)
     # Check if primary_image_url is already in the images array
-    primary_url_in_images = any(img.get("url") == property_obj.primary_image_url for img in images)
+    primary_url_in_images = any(
+        img.get("url") == property_obj.primary_image_url or 
+        img.get("url") == property_obj.primary_image_r2_url 
+        for img in images
+    )
     
     if property_obj.primary_image_url and not primary_url_in_images:
+        # Prioritize R2 URL, fallback to original URL
+        primary_url = property_obj.primary_image_r2_url if property_obj.primary_image_r2_url else property_obj.primary_image_url
         # Insert primary image at the beginning if not already present
         images.insert(0, {
-            "url": property_obj.primary_image_url,
+            "url": primary_url,
             "order": 0,
             "type": "photo",
             "isPreferred": True
@@ -328,8 +336,9 @@ def transform_for_frontend(property_obj, media_items: Optional[List] = None) -> 
     
     # Final fallback: if still no images, use primary_image_url
     if not images and property_obj.primary_image_url:
+        primary_url = property_obj.primary_image_r2_url if property_obj.primary_image_r2_url else property_obj.primary_image_url
         images.append({
-            "url": property_obj.primary_image_url,
+            "url": primary_url,
             "order": 0,
             "type": "photo",
             "isPreferred": True

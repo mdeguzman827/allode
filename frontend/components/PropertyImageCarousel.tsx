@@ -138,7 +138,7 @@ export default function PropertyImageCarousel({
             {primaryImage ? (
               <>
                 <Image
-                  src={`${API_URL}/api/images/${propertyId}/${primaryIndex}`}
+                  src={primaryImage.url}
                   alt={`${propertyAddress} - Primary Image`}
                   fill
                   className="object-cover transition-transform group-hover:scale-105"
@@ -203,7 +203,7 @@ export default function PropertyImageCarousel({
                   {image ? (
                     <>
                       <Image
-                        src={`${API_URL}/api/images/${propertyId}/${imageIndex}`}
+                        src={image.url}
                         alt={`${propertyAddress} - Image ${imageIndex + 1}`}
                         fill
                         className="object-cover transition-transform group-hover:scale-105"
@@ -281,7 +281,7 @@ export default function PropertyImageCarousel({
             <div className="relative w-full h-[80vh] bg-gray-900 rounded-lg overflow-hidden">
               {images[currentIndex] && (
                 <Image
-                  src={`${API_URL}/api/images/${propertyId}/${currentIndex}`}
+                  src={images[currentIndex].url}
                   alt={`${propertyAddress} - Image ${currentIndex + 1}`}
                   fill
                   className="object-contain"
@@ -353,7 +353,7 @@ export default function PropertyImageCarousel({
                     aria-label={`View image ${index + 1}`}
                   >
                     <Image
-                      src={`${API_URL}/api/images/${propertyId}/${index}`}
+                      src={image.url}
                       alt={`Thumbnail ${index + 1}`}
                       fill
                       className="object-cover"

@@ -173,12 +173,14 @@ export default function PropertyPage() {
         if (data.images && data.images.length > 0) {
           const imagesToPreload = Math.min(5, data.images.length)
           for (let i = 0; i < imagesToPreload; i++) {
-            const link = document.createElement('link')
-            link.rel = 'preload'
-            link.as = 'image'
-            link.href = `${API_URL}/api/images/${params.id}/${i}`
-            link.fetchPriority = i === 0 ? 'high' : 'auto'
-            document.head.appendChild(link)
+            if (data.images[i]?.url) {
+              const link = document.createElement('link')
+              link.rel = 'preload'
+              link.as = 'image'
+              link.href = data.images[i].url
+              link.fetchPriority = i === 0 ? 'high' : 'auto'
+              document.head.appendChild(link)
+            }
           }
         }
       } catch (err) {

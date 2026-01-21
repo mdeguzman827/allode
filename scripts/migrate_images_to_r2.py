@@ -3,6 +3,7 @@ Script to migrate existing property images to Cloudflare R2
 """
 import sys
 import os
+import time
 import argparse
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
@@ -30,7 +31,25 @@ from database.models import get_engine, get_session, Property
 from services.image_processor import ImageProcessor
 
 
-def migrate_all_properties(batch_size: int = 10, limit: int = None):
+class RateLimiter:
+    """Simple rate limiter to pause between download requests"""
+    
+    def __init__(self, max_requests_per_second: float):
+        self.max_requests_per_second = max_requests_per_second
+        self.min_interval = 1.0 / max_requests_per_second if max_requests_per_second > 0 else 0
+        self.last_request_time = 0.0
+    
+    def wait(self):
+        if self.min_interval <= 0:
+            return
+        
+        elapsed = time.time() - self.last_request_time
+        if elapsed < self.min_interval:
+            time.sleep(self.min_interval - elapsed)
+        self.last_request_time = time.time()
+
+
+def migrate_all_properties(batch_size: int = 10, limit: int = None, max_requests_per_second: float = 2.0):
     """Migrate all property images to R2"""
     try:
         # Get database URL (same logic as migrate_r2_columns.py)
@@ -50,7 +69,10 @@ def migrate_all_properties(batch_size: int = 10, limit: int = None):
         
         engine = get_engine(database_url)  # Pass the database_url
         session = get_session(engine)
-        processor = ImageProcessor()
+        limiter = RateLimiter(max_requests_per_second) if max_requests_per_second else None
+        if limiter:
+            print(f"Rate limiting enabled: max {max_requests_per_second} req/sec")
+        processor = ImageProcessor(rate_limiter=limiter)
     except Exception as e:
         print(f"Error initializing: {str(e)}")
         print("Make sure R2 credentials are configured in environment variables.")
@@ -155,8 +177,18 @@ if __name__ == "__main__":
         default=None,
         help="Limit number of properties to process (for testing)"
     )
+    parser.add_argument(
+        "--max-requests-per-second",
+        type=float,
+        default=2.0,
+        help="Throttle image downloads (set 0 to disable)"
+    )
     
     args = parser.parse_args()
     
-    migrate_all_properties(batch_size=args.batch_size, limit=args.limit)
+    migrate_all_properties(
+        batch_size=args.batch_size,
+        limit=args.limit,
+        max_requests_per_second=args.max_requests_per_second
+    )
 
