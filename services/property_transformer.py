@@ -302,10 +302,10 @@ def transform_for_frontend(property_obj, media_items: Optional[List] = None) -> 
     if media_items:
         # Sort by order to ensure correct sequence
         sorted_media = sorted(media_items, key=lambda m: m.order if m.order is not None else 999)
-        for media in sorted_media:
+        for idx, media in enumerate(sorted_media):
             if media.media_url:
-                # Prioritize R2 URL, fallback to original URL
-                image_url = media.r2_url if media.r2_url else media.media_url
+                # Prioritize R2 URL, fallback to backend image endpoint (Railway)
+                image_url = media.r2_url if media.r2_url else f"/api/images/{property_obj.id}/{idx + 1}"
                 images.append({
                     "url": image_url,
                     "order": media.order if media.order is not None else len(images),
@@ -324,8 +324,8 @@ def transform_for_frontend(property_obj, media_items: Optional[List] = None) -> 
     )
     
     if property_obj.primary_image_url and not primary_url_in_images:
-        # Prioritize R2 URL, fallback to original URL
-        primary_url = property_obj.primary_image_r2_url if property_obj.primary_image_r2_url else property_obj.primary_image_url
+        # Prioritize R2 URL, fallback to backend image endpoint (Railway)
+        primary_url = property_obj.primary_image_r2_url if property_obj.primary_image_r2_url else f"/api/images/{property_obj.id}/0"
         # Insert primary image at the beginning if not already present
         images.insert(0, {
             "url": primary_url,
@@ -336,7 +336,7 @@ def transform_for_frontend(property_obj, media_items: Optional[List] = None) -> 
     
     # Final fallback: if still no images, use primary_image_url
     if not images and property_obj.primary_image_url:
-        primary_url = property_obj.primary_image_r2_url if property_obj.primary_image_r2_url else property_obj.primary_image_url
+        primary_url = property_obj.primary_image_r2_url if property_obj.primary_image_r2_url else f"/api/images/{property_obj.id}/0"
         images.append({
             "url": primary_url,
             "order": 0,
