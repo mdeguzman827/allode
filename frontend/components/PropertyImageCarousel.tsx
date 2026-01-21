@@ -127,9 +127,9 @@ export default function PropertyImageCarousel({
 
   return (
     <>
-      {/* Zillow-style Gallery Layout - Full Width */}
-      <div className="w-full px-2">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 h-[500px] md:h-[600px] rounded-lg overflow-hidden">
+      {/* Rectangular Gallery Layout - Full Width */}
+      <div className="w-full">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-1 h-[400px] md:h-[450px] rounded-lg overflow-hidden">
           {/* Primary Image - Large on Left */}
           <div 
             className="relative col-span-1 md:col-span-2 overflow-hidden bg-gray-100 dark:bg-gray-900 cursor-pointer group rounded-lg"
@@ -191,7 +191,7 @@ export default function PropertyImageCarousel({
           </div>
 
           {/* Gallery Grid - 2x2 on Right */}
-          <div className="grid grid-cols-2 gap-2 col-span-1">
+          <div className="grid grid-cols-2 gap-1 col-span-1">
             {galleryImageIndices.map((imageIndex, idx) => {
               const image = images[imageIndex]
               return (
