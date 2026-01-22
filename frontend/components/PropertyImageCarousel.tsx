@@ -33,23 +33,30 @@ export default function PropertyImageCarousel({
   const [currentIndex, setCurrentIndex] = useState(0)
   const loadedImagesRef = useRef<Set<number>>(new Set([0]))
 
+  // Filter images to only include valid .webp images
+  const filteredImages = images.filter((img) => {
+    if (!img.url || typeof img.url !== 'string') return false
+    // Only include images ending in .webp
+    return img.url.toLowerCase().endsWith('.webp')
+  })
+
   // Find primary/preferred image or use first image
   const getPrimaryImageIndex = () => {
-    const preferredIndex = images.findIndex(img => img.isPreferred)
+    const preferredIndex = filteredImages.findIndex(img => img.isPreferred)
     return preferredIndex >= 0 ? preferredIndex : 0
   }
 
   const primaryIndex = getPrimaryImageIndex()
-  const primaryImage = images[primaryIndex]
+  const primaryImage = filteredImages[primaryIndex]
   
   // Get next 4 images (excluding primary)
   const getGalleryImages = () => {
-    const otherImages = images.filter((_, index) => index !== primaryIndex)
+    const otherImages = filteredImages.filter((_, index) => index !== primaryIndex)
     return otherImages.slice(0, 4)
   }
 
   const galleryImages = getGalleryImages()
-  const galleryImageIndices = images
+  const galleryImageIndices = filteredImages
     .map((_, index) => index)
     .filter(index => index !== primaryIndex)
     .slice(0, 4)
@@ -73,20 +80,20 @@ export default function PropertyImageCarousel({
 
   // Reset current index when images change
   useEffect(() => {
-    if (currentIndex >= images.length && images.length > 0) {
+    if (currentIndex >= filteredImages.length && filteredImages.length > 0) {
       setCurrentIndex(0)
     }
-  }, [images.length, currentIndex])
+  }, [filteredImages.length, currentIndex])
 
   // Preload next/previous images for full carousel
   useEffect(() => {
     if (!showFullCarousel) return
     
     const preloadAdjacentImages = (index: number) => {
-      if (images.length <= 1) return
+      if (filteredImages.length <= 1) return
       
-      const nextIndex = (index + 1) % images.length
-      const prevIndex = (index - 1 + images.length) % images.length
+      const nextIndex = (index + 1) % filteredImages.length
+      const prevIndex = (index - 1 + filteredImages.length) % filteredImages.length
       
       if (!loadedImagesRef.current.has(nextIndex)) {
         loadedImagesRef.current.add(nextIndex)
@@ -97,7 +104,7 @@ export default function PropertyImageCarousel({
     }
 
     preloadAdjacentImages(currentIndex)
-  }, [currentIndex, images.length, showFullCarousel])
+  }, [currentIndex, filteredImages.length, showFullCarousel])
 
   // Keyboard navigation for full carousel
   useEffect(() => {
@@ -105,9 +112,9 @@ export default function PropertyImageCarousel({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') {
-        setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))
+        setCurrentIndex((prev) => (prev === 0 ? filteredImages.length - 1 : prev - 1))
       } else if (e.key === 'ArrowRight') {
-        setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))
+        setCurrentIndex((prev) => (prev === filteredImages.length - 1 ? 0 : prev + 1))
       } else if (e.key === 'Escape') {
         setShowFullCarousel(false)
       }
@@ -115,9 +122,9 @@ export default function PropertyImageCarousel({
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [images.length, showFullCarousel])
+  }, [filteredImages.length, showFullCarousel])
 
-  if (!images || images.length === 0) {
+  if (!filteredImages || filteredImages.length === 0) {
     return (
       <div className="w-full h-96 bg-gray-200 dark:bg-gray-800 rounded-lg flex items-center justify-center">
         <span className="text-gray-400 text-lg">No Images Available</span>
@@ -193,7 +200,7 @@ export default function PropertyImageCarousel({
           {/* Gallery Grid - 2x2 on Right */}
           <div className="grid grid-cols-2 gap-1 col-span-1">
             {galleryImageIndices.map((imageIndex, idx) => {
-              const image = images[imageIndex]
+              const image = filteredImages[imageIndex]
               return (
                 <div
                   key={imageIndex}
@@ -219,7 +226,7 @@ export default function PropertyImageCarousel({
                         }}
                       />
                       {/* Show "See all X photos" overlay on last image if there are more */}
-                      {idx === galleryImageIndices.length - 1 && images.length > 5 && (
+                      {idx === galleryImageIndices.length - 1 && filteredImages.length > 5 && (
                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                           <button
                             onClick={(e) => {
@@ -228,9 +235,9 @@ export default function PropertyImageCarousel({
                               setCurrentIndex(0)
                             }}
                             className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors"
-                            aria-label={`See all ${images.length} photos`}
+                            aria-label={`See all ${filteredImages.length} photos`}
                           >
-                            See all {images.length} photos
+                            See all {filteredImages.length} photos
                           </button>
                         </div>
                       )}
@@ -279,9 +286,9 @@ export default function PropertyImageCarousel({
 
             {/* Main Image */}
             <div className="relative w-full h-[80vh] bg-gray-900 rounded-lg overflow-hidden">
-              {images[currentIndex] && (
+              {filteredImages[currentIndex] && (
                 <Image
-                  src={images[currentIndex].url}
+                  src={filteredImages[currentIndex].url}
                   alt={`${propertyAddress} - Image ${currentIndex + 1}`}
                   fill
                   className="object-contain"
@@ -298,7 +305,7 @@ export default function PropertyImageCarousel({
               )}
 
               {/* Navigation Arrows */}
-              {images.length > 1 && (
+              {filteredImages.length > 1 && (
                 <>
                   <button
                     onClick={(e) => {
@@ -328,17 +335,17 @@ export default function PropertyImageCarousel({
               )}
 
               {/* Image Counter */}
-              {images.length > 1 && (
+              {filteredImages.length > 1 && (
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-4 py-2 rounded-full text-sm">
-                  {currentIndex + 1} / {images.length}
+                  {currentIndex + 1} / {filteredImages.length}
                 </div>
               )}
             </div>
 
             {/* Thumbnail Strip */}
-            {images.length > 1 && (
+            {filteredImages.length > 1 && (
               <div className="mt-4 flex gap-2 overflow-x-auto pb-2 justify-center">
-                {images.map((image, index) => (
+                {filteredImages.map((image, index) => (
                   <button
                     key={index}
                     onClick={(e) => {

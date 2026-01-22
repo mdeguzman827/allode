@@ -86,6 +86,9 @@ class ImageProcessor:
             property_id=property_id
         ).order_by(PropertyMedia.order).all()
         
+        # Use a separate counter that only increments when images are actually processed
+        media_image_index = 1  # Start from 1 (0 is primary)
+        
         for idx, media_item in enumerate(media_items):
             if not media_item.media_url:
                 continue
@@ -107,7 +110,7 @@ class ImageProcessor:
                 result = self._download_and_store(
                     media_item.media_url,
                     property_id,
-                    idx + 1  # Start from 1 (0 is primary)
+                    media_image_index  # Use counter that only increments when processed
                 )
                 
                 if result:
@@ -123,6 +126,9 @@ class ImageProcessor:
                         **result,
                         "order": media_item.order
                     })
+                    
+                    # Increment counter only after successfully processing an image
+                    media_image_index += 1
                     
             except Exception as e:
                 error_msg = f"Failed to process media image {idx}: {str(e)}"
