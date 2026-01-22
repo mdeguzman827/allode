@@ -137,6 +137,28 @@ class R2Storage:
             print(f"Failed to delete image from R2: {str(e)}")
             return False
     
+    def image_exists(self, r2_key: str) -> bool:
+        """
+        Check if an image exists in R2 storage
+        
+        Args:
+            r2_key: R2 object key (e.g., "properties/NWM123/0.webp")
+            
+        Returns:
+            True if image exists, False otherwise
+        """
+        try:
+            self.s3_client.head_object(
+                Bucket=self.bucket_name,
+                Key=r2_key
+            )
+            return True
+        except ClientError as e:
+            if e.response['Error']['Code'] == '404' or e.response['Error']['Code'] == 'NoSuchKey':
+                return False
+            # For other errors, assume it doesn't exist to be safe
+            return False
+    
     def _optimize_image(self, image_data: bytes, content_type: str) -> bytes:
         """
         Optimize image (resize, compress, convert to WebP)

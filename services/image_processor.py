@@ -55,12 +55,34 @@ class ImageProcessor:
         
         # Process primary image
         if property_obj.primary_image_url:
-            # Check if already stored
+            # Check if already stored in database AND exists in R2
             if not force_reprocess and property_obj.primary_image_r2_key:
-                results["primary_image"] = {
-                    "status": "already_stored",
-                    "r2_key": property_obj.primary_image_r2_key
-                }
+                # Verify the file actually exists in R2 storage
+                if self.r2_storage.image_exists(property_obj.primary_image_r2_key):
+                    results["primary_image"] = {
+                        "status": "already_stored",
+                        "r2_key": property_obj.primary_image_r2_key
+                    }
+                else:
+                    # Database has record but file doesn't exist in R2, reprocess it
+                    try:
+                        result = self._download_and_store(
+                            property_obj.primary_image_url,
+                            property_id,
+                            0
+                        )
+                        if result:
+                            # Update property record
+                            property_obj.primary_image_r2_key = result["r2_key"]
+                            property_obj.primary_image_r2_url = result["r2_url"]
+                            property_obj.primary_image_stored_at = datetime.utcnow()
+                            db.commit()
+                            
+                            results["primary_image"] = result
+                    except Exception as e:
+                        error_msg = f"Failed to process primary image: {str(e)}"
+                        results["errors"].append(error_msg)
+                        print(error_msg)
             else:
                 try:
                     result = self._download_and_store(
@@ -93,14 +115,17 @@ class ImageProcessor:
             if not media_item.media_url:
                 continue
             
-            # Check if already stored
+            # Check if already stored in database AND exists in R2
             if not force_reprocess and media_item.r2_key:
-                results["media_images"].append({
-                    "status": "already_stored",
-                    "r2_key": media_item.r2_key,
-                    "order": media_item.order
-                })
-                continue
+                # Verify the file actually exists in R2 storage
+                if self.r2_storage.image_exists(media_item.r2_key):
+                    results["media_images"].append({
+                        "status": "already_stored",
+                        "r2_key": media_item.r2_key,
+                        "order": media_item.order
+                    })
+                    continue
+                # If database has record but file doesn't exist in R2, continue to reprocess it
             
             try:
                 # Skip if this is the same as primary image
