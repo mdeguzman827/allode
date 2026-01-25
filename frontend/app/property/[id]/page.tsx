@@ -133,7 +133,6 @@ export default function PropertyPage() {
     utilities: false,
     publicFacts: false,
     location: false,
-    other: false,
   })
 
   const handleToggleSection = (section: string) => {
@@ -152,7 +151,6 @@ export default function PropertyPage() {
       utilities: !allExpanded,
       publicFacts: !allExpanded,
       location: !allExpanded,
-      other: !allExpanded,
     })
   }
 
@@ -244,6 +242,44 @@ export default function PropertyPage() {
             closeDate={property.propertyDetails.closeDate}
           />
       </div>
+      )}
+
+      {/* Listing Agent, Office - Below Image Gallery */}
+      {(property.propertyDetails.listingAgentFullName || property.propertyDetails.listOfficeName || 
+        (property.propertyDetails.mlsStatus?.toLowerCase() === 'sold' && 
+         (property.propertyDetails.buyerAgentFullName || property.propertyDetails.buyerOfficeName))) && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+          <p className="text-gray-900 dark:text-white">
+            {(property.propertyDetails.listingAgentFullName || property.propertyDetails.listOfficeName) && (
+              <>
+                <span className="font-medium">Listed by: </span>
+                {(() => {
+                  const agent = property.propertyDetails.listingAgentFullName || ''
+                  const office = property.propertyDetails.listOfficeName || ''
+                  const parts = []
+                  if (agent) parts.push(agent)
+                  if (office) parts.push(office)
+                  return parts.length > 0 ? parts.join(', ') : null
+                })()}
+              </>
+            )}
+            {property.propertyDetails.mlsStatus?.toLowerCase() === 'sold' && 
+             (property.propertyDetails.buyerAgentFullName || property.propertyDetails.buyerOfficeName) && (
+              <>
+                {(property.propertyDetails.listingAgentFullName || property.propertyDetails.listOfficeName) && ' • '}
+                <span className="font-medium">Bought by: </span>
+                {(() => {
+                  const agent = property.propertyDetails.buyerAgentFullName || ''
+                  const office = property.propertyDetails.buyerOfficeName || ''
+                  const parts = []
+                  if (agent) parts.push(agent)
+                  if (office) parts.push(office)
+                  return parts.length > 0 ? parts.join(', ') : null
+                })()}
+              </>
+            )}
+          </p>
+        </div>
       )}
 
       {/* Main Content */}
@@ -338,14 +374,59 @@ export default function PropertyPage() {
             </div>
 
             {/* Description */}
-            {property.description && (
+            {(property.description || property.propertyDetails.sourceSystemName || property.mlsNumber) && (
               <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                   Description
                 </h2>
-                <p className="text-gray-600 dark:text-gray-300 whitespace-pre-line leading-relaxed">
-                  {property.description}
-                </p>
+                {property.description && (
+                  <p className="text-gray-600 dark:text-gray-300 whitespace-pre-line leading-relaxed">
+                    {property.description}
+                  </p>
+                )}
+                {(property.propertyDetails.sourceSystemName || property.mlsNumber) && (
+                  <div className={property.description ? "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700" : ""}>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      Source
+                    </p>
+                    <div className="text-gray-900 dark:text-white flex items-center gap-2 flex-wrap">
+                      {(() => {
+                        const sourceSystemName = property.propertyDetails.sourceSystemName || ''
+                        const mlsNumber = property.mlsNumber || ''
+                        // Remove "NWM" prefix from Listing ID if present
+                        const listingIdWithoutPrefix = mlsNumber.startsWith('NWM') 
+                          ? mlsNumber.substring(3) 
+                          : mlsNumber
+                        
+                        const parts = []
+                        if (sourceSystemName) {
+                          parts.push(sourceSystemName)
+                        }
+                        if (listingIdWithoutPrefix) {
+                          parts.push(`MLS #${listingIdWithoutPrefix}`)
+                        }
+                        
+                        const text = parts.length > 0 ? parts.join(', ') : null
+                        const showLogo = sourceSystemName === 'NWMLS' && listingIdWithoutPrefix
+                        
+                        return (
+                          <>
+                            {text}
+                            {showLogo && (
+                              <img
+                                src="/nwmls-logo.jpg"
+                                alt="NWMLS"
+                                width={20}
+                                height={20}
+                                className="inline-block"
+                              />
+                            )}
+                          </>
+                        )
+                      })()}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -812,90 +893,6 @@ export default function PropertyPage() {
                         <div>
                           <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">NWM Zoning Jurisdiction</dt>
                           <dd className="text-gray-900 dark:text-white">{property.propertyDetails.nwmZoningJurisdiction}</dd>
-                        </div>
-                      )}
-                      </dl>
-                    </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Other Section */}
-                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                  <button
-                    onClick={() => handleToggleSection('other')}
-                    className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                    aria-label="Toggle Other section"
-                    aria-expanded={expandedSections.other}
-                  >
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Other
-                    </h3>
-                    <svg
-                      className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${expandedSections.other ? 'transform rotate-180' : ''}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  {expandedSections.other && (
-                    <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <dl className="space-y-4">
-                      {property.propertyDetails.listingTerms && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Listing Terms</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.listingTerms}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.possession && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Possession</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.possession}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.nwmOffers && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">NWM Offers</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.nwmOffers}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.listOfficeName && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">List Office Name</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.listOfficeName}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.buyerAgentFullName && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Buyer Agent</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.buyerAgentFullName}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.buyerOfficeName && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Buyer Office</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.buyerOfficeName}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.sourceSystemName && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Source System Name</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.sourceSystemName}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.originatingSystemName && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Originating System Name</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.originatingSystemName}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.specialListingConditions && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Special Listing Conditions</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.specialListingConditions}</dd>
                         </div>
                       )}
                       </dl>

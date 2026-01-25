@@ -243,14 +243,19 @@ export default function PropertyResults({
                 </div>
 
                 <div className="flex gap-6 mt-4 text-sm text-gray-600 dark:text-gray-400">
-                  {property.propertyDetails.bedrooms && (
-                    <span>{property.propertyDetails.bedrooms} bed</span>
-                  )}
-                  {property.propertyDetails.bathrooms && (
-                    <span>{property.propertyDetails.bathrooms} bath</span>
-                  )}
-                  {property.propertyDetails.squareFeet && (
-                    <span>{property.propertyDetails.squareFeet.toLocaleString()} sq ft</span>
+                  {property.propertyDetails.type?.toLowerCase() !== 'land' && 
+                   property.propertyDetails.type?.toLowerCase() !== 'commercial sale' && (
+                    <>
+                      {property.propertyDetails.bedrooms && (
+                        <span>{property.propertyDetails.bedrooms} bed</span>
+                      )}
+                      {property.propertyDetails.bathrooms && (
+                        <span>{property.propertyDetails.bathrooms} bath</span>
+                      )}
+                      {property.propertyDetails.squareFeet != null && (
+                        <span>{property.propertyDetails.squareFeet.toLocaleString()} sq ft</span>
+                      )}
+                    </>
                   )}
                   {property.propertyDetails.type && (
                     <span>{property.propertyDetails.type}</span>

@@ -395,7 +395,7 @@ def transform_for_frontend(property_obj, media_items: Optional[List] = None) -> 
             "inclusions": getattr(property_obj, 'inclusions', None),
             "interiorFeatures": getattr(property_obj, 'interior_features', None),
             "levels": getattr(property_obj, 'levels', None),
-            "listingAgentFullName": getattr(property_obj, 'listing_agent_full_name', None),
+            "listingAgentFullName": getattr(property_obj, 'list_agent_full_name', None) or getattr(property_obj, 'listing_agent_full_name', None),
             "listOfficeName": getattr(property_obj, 'list_office_name', None),
             "listOfficePhone": getattr(property_obj, 'list_office_phone', None),
             "listContractDate": format_date(getattr(property_obj, 'list_contract_date', None)),
