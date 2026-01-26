@@ -270,7 +270,13 @@ export default function PropertyResults({
 
                 <div className="mt-4">
                   <span className="text-xs text-gray-500 dark:text-gray-500">
-                    MLS: {property.mlsNumber}
+                    MLS: {(() => {
+                      const mlsNumber = property.mlsNumber || ''
+                      // Replace "NWM" prefix with "#" if present
+                      return mlsNumber.startsWith('NWM') 
+                        ? `#${mlsNumber.substring(3)}`
+                        : mlsNumber
+                    })()}
                   </span>
                 </div>
               </div>
