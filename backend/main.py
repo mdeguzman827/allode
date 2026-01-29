@@ -144,7 +144,7 @@ async def root():
 
 @app.post("/api/admin/populate")
 async def populate_database_endpoint(
-    limit: int = Query(500, ge=1, le=1000, description="Number of properties to populate (1-1000)"),
+    limit: Optional[int] = Query(None, ge=1, description="Number of properties to populate (omit for no limit)"),
     clear: bool = Query(False, description="Clear existing data before populating")
 ):
     """
@@ -152,7 +152,7 @@ async def populate_database_endpoint(
     This endpoint runs inside Railway's environment and can access the internal database.
     
     Parameters:
-    - limit: Number of properties to populate (1-1000)
+    - limit: Optional cap on number of properties (omit to transform and insert all)
     - clear: If True, deletes all existing properties and media before populating
     
     Note: This is an admin endpoint. Consider adding authentication in production.
@@ -206,9 +206,9 @@ async def populate_database_endpoint(
         finally:
             session.close()
         
-        message = f"Database populated successfully with up to {limit} properties"
+        message = f"Database populated successfully with {property_count} properties" if limit is None else f"Database populated successfully with up to {limit} properties"
         if clear:
-            message = f"Database cleared and repopulated with up to {limit} properties"
+            message = f"Database cleared and repopulated with {property_count} properties" if limit is None else f"Database cleared and repopulated with up to {limit} properties"
         
         return {
             "success": True,
@@ -231,17 +231,18 @@ async def populate_database_endpoint(
 async def get_properties(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
-    sort_by: str = Query("price_asc", description="Sort by: price_asc, price_desc, sqft_desc"),
+    sort_by: str = Query("price_asc", description="Sort by: price_asc, price_desc, sqft_desc, lot_size_desc, beds_desc, baths_desc"),
     address: Optional[str] = Query(None, description="Filter by address"),
     listing_id: Optional[str] = Query(None, description="Filter by listing ID"),
     city: Optional[str] = Query(None, description="Filter by city"),
     state: Optional[str] = Query(None, description="Filter by state"),
     zipcode: Optional[str] = Query(None, description="Filter by zip code"),
-    # min_price: Optional[int] = Query(None, ge=0, description="Minimum price"),
-    # max_price: Optional[int] = Query(None, ge=0, description="Maximum price"),
-    # bedrooms: Optional[int] = Query(None, ge=0, description="Number of bedrooms"),
-    # property_type: Optional[str] = Query(None, description="Property type"),
-    # status: Optional[str] = Query(None, description="Listing status"),
+    min_price: Optional[int] = Query(None, ge=0, description="Minimum price"),
+    max_price: Optional[int] = Query(None, ge=0, description="Maximum price"),
+    bedrooms: Optional[int] = Query(None, ge=0, description="Number of bedrooms"),
+    bathrooms: Optional[int] = Query(None, ge=0, description="Number of bathrooms"),
+    home_type: Optional[str] = Query(None, description="Home type: Single Family, Multi Family, Condo, Land, Manufactured, Other"),
+    status: Optional[str] = Query(None, description="Listing status"),
     db: Session = Depends(get_db)
 ):
     """
@@ -253,6 +254,10 @@ async def get_properties(
     - city
     - state
     - zipcode
+    - min_price, max_price
+    - bedrooms, bathrooms
+    - home_type
+    - status
     """
     try:
         # Build query
@@ -269,16 +274,29 @@ async def get_properties(
             query = query.filter(Property.state_or_province.ilike(f"%{state}%"))
         if zipcode:
             query = query.filter(Property.postal_code.ilike(f"%{zipcode}%"))
-        # if min_price:
-        #     query = query.filter(Property.list_price >= min_price)
-        # if max_price:
-        #     query = query.filter(Property.list_price <= max_price)
-        # if bedrooms:
-        #     query = query.filter(Property.bedrooms_total == bedrooms)
-        # if property_type:
-        #     query = query.filter(Property.property_type.ilike(f"%{property_type}%"))
-        # if status:
-        #     query = query.filter(Property.standard_status.ilike(f"%{status}%"))
+        if min_price:
+            query = query.filter(Property.list_price >= min_price)
+        if max_price:
+            query = query.filter(Property.list_price <= max_price)
+        if bedrooms:
+            query = query.filter(Property.bedrooms_total >= bedrooms)
+        if bathrooms:
+            query = query.filter(Property.bathrooms_total_integer >= bathrooms)
+        if home_type:
+            home_type_list = [ht.strip() for ht in home_type.split(',') if ht.strip()]
+            if home_type_list:
+                home_type_conditions = [
+                    Property.home_type == ht for ht in home_type_list
+                ]
+                query = query.filter(or_(*home_type_conditions))
+        if status:
+            # Support multiple status values (comma-separated)
+            status_list = [s.strip() for s in status.split(',') if s.strip()]
+            if status_list:
+                status_conditions = [
+                    Property.standard_status.ilike(f"%{s}%") for s in status_list
+                ]
+                query = query.filter(or_(*status_conditions))
 
         
         # Get total count (before applying sorting)
@@ -293,6 +311,12 @@ async def get_properties(
             query = query.order_by(nullslast(Property.list_price.desc()))
         elif sort_by_normalized == "sqft_desc":
             query = query.order_by(nullslast(Property.living_area.desc()))
+        elif sort_by_normalized == "lot_size_desc":
+            query = query.order_by(nullslast(Property.lot_size_square_feet.desc()))
+        elif sort_by_normalized == "beds_desc":
+            query = query.order_by(nullslast(Property.bedrooms_total.desc()))
+        elif sort_by_normalized == "baths_desc":
+            query = query.order_by(nullslast(Property.bathrooms_total_integer.desc()))
         else:
             # Default to price_asc if invalid sort_by
             query = query.order_by(nullslast(Property.list_price.asc()))

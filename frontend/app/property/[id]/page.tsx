@@ -20,6 +20,7 @@ interface Property {
   }
   propertyDetails: {
     type: string | null
+    homeType?: string | null
     subType: string | null
     bedrooms: number | null
     bathrooms: number | null
@@ -310,12 +311,12 @@ export default function PropertyPage() {
                 Property Details
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {/* Row 1: Property Type, Bedrooms, Bathrooms, Sq Ft */}
+                {/* Row 1: Home Type, Bedrooms, Bathrooms, Sq Ft */}
                 <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <p className="text-lg font-bold text-gray-900 dark:text-white">
-                    {property.propertyDetails.type || '-'}
+                    {property.propertyDetails.homeType || property.propertyDetails.type || '-'}
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Property Type</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Home Type</p>
                 </div>
                 <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">

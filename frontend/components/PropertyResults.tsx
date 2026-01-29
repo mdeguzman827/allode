@@ -18,6 +18,7 @@ interface Property {
   }
   propertyDetails: {
     type: string
+    homeType?: string
     bedrooms: number
     bathrooms: number
     squareFeet: number
@@ -156,6 +157,9 @@ export default function PropertyResults({
             <option value="price_asc">Price: Low to High</option>
             <option value="price_desc">Price: High to Low</option>
             <option value="sqft_desc">Square Feet</option>
+            <option value="lot_size_desc">Lot Size</option>
+            <option value="beds_desc">Beds</option>
+            <option value="baths_desc">Baths</option>
           </select>
         </div>
       </div>
@@ -258,8 +262,8 @@ export default function PropertyResults({
                       )}
                     </>
                   )}
-                  {property.propertyDetails.type && (
-                    <span>{property.propertyDetails.type}</span>
+                  {(property.propertyDetails.homeType || property.propertyDetails.type) && (
+                    <span>{property.propertyDetails.homeType || property.propertyDetails.type}</span>
                   )}
                 </div>
 

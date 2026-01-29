@@ -34,6 +34,7 @@ class Property(Base):
     # Property details
     property_type = Column(String, index=True)
     property_sub_type = Column(String)
+    home_type = Column(String, index=True)  # Derived from property_sub_type: Multi Family, Single Family, Manufactured, Condo, Other
     bedrooms_total = Column(Integer, index=True)
     bathrooms_total_integer = Column(Integer, index=True)
     bathrooms_full = Column(Integer)

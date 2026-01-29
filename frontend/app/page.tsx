@@ -18,11 +18,11 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex flex-col">
-      {/* Main Content - Centered */}
-      <div className="flex-1 flex items-center justify-center px-4">
-        <div className="w-full max-w-2xl">
-          {/* Logo/Title */}
-          <div className="text-center mb-12">
+      {/* Main Content - Search bar centered in viewport */}
+      <div className="flex-1 grid grid-rows-[1fr_auto_1fr] min-h-0 px-4">
+        {/* Top row: title and description aligned to bottom */}
+        <div className="flex flex-col justify-end items-center pb-6">
+          <div className="w-full max-w-2xl text-center">
             <h2 className="text-4xl font-light text-gray-900 dark:text-gray-100 mb-4">
               The Flat Fee Brokerage for Buyers
             </h2>
@@ -30,15 +30,21 @@ export default function Home() {
               We charge a flat fee of $4,995 after closing, and we'll walk you through the entire process. Buyers will receive all of the commission offered by the seller, minus our flat fee.
             </p>
           </div>
-
-          {/* Search Bar */}
-          <PropertySearch
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            onSearch={handleSearch}
-            isLoading={false}
-          />
         </div>
+        {/* Middle row: search bar (vertically centered on page) */}
+        <div className="flex justify-center items-center">
+          <div className="w-full max-w-2xl">
+            <PropertySearch
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              onSearch={handleSearch}
+              isLoading={false}
+              size="large"
+            />
+          </div>
+        </div>
+        {/* Bottom row: empty spacer */}
+        <div />
       </div>
 
       {/* Footer */}

@@ -60,6 +60,41 @@ def convert_boolean(value):
     return None
 
 
+# Subtype -> HomeType mapping for display/filtering
+HOME_TYPE_BY_SUBTYPE = {
+    "Multi Family": "Multi Family",
+    "Single Family Residence": "Single Family",
+    "Manufactured On Land": "Manufactured",
+    "Manufactured Home": "Manufactured",
+    "Condominium": "Condo",
+    "Land": "Land",
+    "Farm & Ranch": "Other",
+    "Residential": "Other",
+    "Rental": "Other",
+    "Timeshare": "Other",
+    "Boat Slip": "Other",
+    "Business Opportunity": "Other",
+    "Commercial Industrial": "Other",
+}
+
+
+def get_home_type_from_subtype(subtype: Optional[str]) -> Optional[str]:
+    """
+    Derive HomeType from PropertySubtype.
+    Returns one of: Multi Family, Single Family, Manufactured, Condo, Land, Other.
+    """
+    if not subtype or not isinstance(subtype, str):
+        return None
+    normalized = subtype.strip()
+    if not normalized:
+        return None
+    # Case-insensitive lookup so API variations still map correctly
+    for key, home_type in HOME_TYPE_BY_SUBTYPE.items():
+        if key.lower() == normalized.lower():
+            return home_type
+    return "Other"
+
+
 def safe_convert(value):
     """
     Safely convert any value to a database-compatible type.
@@ -124,6 +159,7 @@ def transform_property(raw_property: Dict[str, Any]) -> Dict[str, Any]:
         "unparsed_address": safe_convert(raw_property.get("UnparsedAddress")),
         "property_type": safe_convert(raw_property.get("PropertyType")),
         "property_sub_type": safe_convert(raw_property.get("PropertySubType")),
+        "home_type": get_home_type_from_subtype(raw_property.get("PropertySubType")),
         "bedrooms_total": raw_property.get("BedroomsTotal"),
         "bathrooms_total_integer": raw_property.get("BathroomsTotalInteger"),
         "bathrooms_full": raw_property.get("BathroomsFull"),
@@ -362,6 +398,7 @@ def transform_for_frontend(property_obj, media_items: Optional[List] = None) -> 
         "propertyDetails": {
             "type": property_obj.property_type,
             "subType": property_obj.property_sub_type,
+            "homeType": getattr(property_obj, "home_type", None),
             "bedrooms": property_obj.bedrooms_total,
             "bathrooms": property_obj.bathrooms_total_integer,
             "squareFeet": property_obj.living_area,

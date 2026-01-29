@@ -24,6 +24,7 @@ interface PropertySearchProps {
   setSearchQuery: (query: string) => void
   onSearch: (e: FormEvent<HTMLFormElement>) => void
   isLoading: boolean
+  size?: 'default' | 'large'
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -33,7 +34,9 @@ export default function PropertySearch({
   setSearchQuery,
   onSearch,
   isLoading,
+  size = 'default',
 }: PropertySearchProps) {
+  const isLarge = size === 'large'
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
@@ -164,9 +167,11 @@ export default function PropertySearch({
   return (
     <form onSubmit={onSearch} className="w-full">
       <div className="relative">
-        <div className="flex items-center border border-gray-300 dark:border-gray-700 rounded-full shadow-lg hover:shadow-xl transition-shadow px-6 py-4 bg-white dark:bg-gray-900">
+        <div className={`flex items-center border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 ${
+          isLarge ? 'px-5 py-4' : 'px-4 py-2.5'
+        }`}>
           <svg
-            className="w-5 h-5 text-gray-400 mr-4"
+            className={`text-gray-400 mr-3 flex-shrink-0 ${isLarge ? 'w-5 h-5' : 'w-4 h-4'}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -192,7 +197,7 @@ export default function PropertySearch({
             }}
             onKeyDown={handleKeyDown}
             placeholder="Enter property address or city"
-            className="flex-1 outline-none bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 text-lg"
+            className={`flex-1 outline-none bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 ${isLarge ? 'text-lg' : 'text-sm'}`}
             disabled={isLoading}
             aria-label="Property search with autocomplete"
             aria-autocomplete="list"
@@ -200,8 +205,8 @@ export default function PropertySearch({
             aria-controls="suggestions-list"
           />
           {(isLoading || isFetching) && (
-            <div className="ml-4">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-400"></div>
+            <div className="ml-3 flex-shrink-0">
+              <div className={`animate-spin rounded-full border-b-2 border-gray-400 ${isLarge ? 'h-5 w-5' : 'h-4 w-4'}`}></div>
             </div>
           )}
         </div>

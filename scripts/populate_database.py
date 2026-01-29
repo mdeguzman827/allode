@@ -1,5 +1,6 @@
 """
-Script to populate database with first 1000 properties from NWMLS API
+Script to populate database with properties from NWMLS API.
+Pages through all results using @odata.nextLink until no more pages.
 """
 import sys
 import os
@@ -24,17 +25,30 @@ headers = {
 
 
 def fetch_properties_from_api() -> List[Dict[str, Any]]:
-    """Fetch properties from NWMLS API"""
+    """Fetch all properties from NWMLS API by following @odata.nextLink until no more pages."""
+    all_properties: List[Dict[str, Any]] = []
+    next_url: str | None = API_URL
+    page_num = 1
+
     print("Fetching properties from NWMLS API...")
-    response = requests.get(API_URL, headers=headers)
-    
-    if response.status_code != 200:
-        raise Exception(f"API request failed: {response.status_code} - {response.text}")
-    
-    data = response.json()
-    properties = data.get("value", [])
-    print(f"✓ Fetched {len(properties)} properties from API")
-    return properties
+
+    while next_url:
+        response = requests.get(next_url, headers=headers)
+
+        if response.status_code != 200:
+            raise Exception(f"API request failed: {response.status_code} - {response.text}")
+
+        data = response.json()
+        page_properties = data.get("value", [])
+        all_properties.extend(page_properties)
+        print(f"  Page {page_num}: fetched {len(page_properties)} properties (total so far: {len(all_properties)})")
+
+        # OData responses include @odata.nextLink when more pages exist
+        next_url = data.get("@odata.nextLink")
+        page_num += 1
+
+    print(f"✓ Fetched {len(all_properties)} properties from API across {page_num - 1} page(s)")
+    return all_properties
 
 
 def get_database_url(database_url: str = None):
@@ -63,8 +77,8 @@ def get_database_url(database_url: str = None):
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     return f"sqlite:///{os.path.join(project_root, 'properties.db')}"
 
-def populate_database(database_url: str = None, limit: int = 1000):
-    """Populate database with properties"""
+def populate_database(database_url: str = None, limit: int | None = None):
+    """Populate database with properties. No limit applied when limit is None."""
     database_url = get_database_url(database_url)
     
     print("=" * 60)
@@ -81,11 +95,11 @@ def populate_database(database_url: str = None, limit: int = 1000):
         print("\n2. Fetching properties from API...")
         raw_properties = fetch_properties_from_api()
         
-        # Limit to first N properties
-        if limit:
+        if limit is not None:
             raw_properties = raw_properties[:limit]
-        
-        print(f"\n3. Transforming and inserting {len(raw_properties)} properties...")
+            print(f"\n3. Transforming and inserting up to {limit} properties ({len(raw_properties)} available)...")
+        else:
+            print(f"\n3. Transforming and inserting all {len(raw_properties)} properties...")
         
         inserted_count = 0
         skipped_count = 0
@@ -200,7 +214,7 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Populate database with NWMLS properties")
     parser.add_argument("--database", default=None, help="Database URL (overrides DATABASE_URL env var)")
-    parser.add_argument("--limit", type=int, default=1000, help="Limit number of properties to insert")
+    parser.add_argument("--limit", type=int, default=None, help="Limit number of properties to insert (default: no limit)")
     
     args = parser.parse_args()
     

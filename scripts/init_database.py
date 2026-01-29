@@ -44,7 +44,8 @@ def main():
         print("  - properties")
         print("  - property_media")
         print("\nYou can now populate the database with:")
-        print("  python3 scripts/populate_database.py --limit 500")
+        print("  python3 scripts/populate_database.py")
+        print("  python3 scripts/populate_database.py --limit 500  # optional cap")
     except Exception as e:
         print(f"✗ Error initializing database: {e}")
         import traceback
