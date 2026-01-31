@@ -286,7 +286,7 @@ async def get_properties(
             home_type_list = [ht.strip() for ht in home_type.split(',') if ht.strip()]
             if home_type_list:
                 home_type_conditions = [
-                    Property.home_type == ht for ht in home_type_list
+                    func.lower(Property.home_type) == func.lower(ht) for ht in home_type_list
                 ]
                 query = query.filter(or_(*home_type_conditions))
         if status:
