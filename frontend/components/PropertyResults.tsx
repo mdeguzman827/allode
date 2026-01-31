@@ -19,6 +19,7 @@ interface Property {
   propertyDetails: {
     type: string
     homeType?: string
+    subType?: string
     bedrooms: number
     bathrooms: number
     squareFeet: number
@@ -165,7 +166,14 @@ export default function PropertyResults({
       </div>
 
       <div className="space-y-6">
-        {data.properties.map((property) => (
+        {data.properties.map((property) => {
+          const homeType = property.propertyDetails.homeType || property.propertyDetails.type
+          const displayHomeType =
+            homeType?.toLowerCase() === 'other' && property.propertyDetails.subType
+              ? property.propertyDetails.subType
+              : homeType
+
+          return (
           <Link
             key={property.id}
             href={`/property/${property.id}`}
@@ -248,23 +256,16 @@ export default function PropertyResults({
                 </div>
 
                 <div className="flex gap-6 mt-4 text-sm text-gray-600 dark:text-gray-400">
-                  {property.propertyDetails.type?.toLowerCase() !== 'land' && 
-                   property.propertyDetails.type?.toLowerCase() !== 'commercial sale' && (
-                    <>
-                      {property.propertyDetails.bedrooms && (
-                        <span>{property.propertyDetails.bedrooms} bed</span>
-                      )}
-                      {property.propertyDetails.bathrooms && (
-                        <span>{property.propertyDetails.bathrooms} bath</span>
-                      )}
-                      {property.propertyDetails.squareFeet != null && (
-                        <span>{property.propertyDetails.squareFeet.toLocaleString()} sq ft</span>
-                      )}
-                    </>
+                  <span>
+                    {property.propertyDetails.bedrooms ?? 0} {property.propertyDetails.bedrooms === 1 ? 'bed' : 'beds'}
+                  </span>
+                  <span>
+                    {property.propertyDetails.bathrooms ?? 0} {property.propertyDetails.bathrooms === 1 ? 'bath' : 'baths'}
+                  </span>
+                  {property.propertyDetails.squareFeet != null && (
+                    <span>{property.propertyDetails.squareFeet.toLocaleString()} sq ft</span>
                   )}
-                  {(property.propertyDetails.homeType || property.propertyDetails.type) && (
-                    <span>{property.propertyDetails.homeType || property.propertyDetails.type}</span>
-                  )}
+                  {displayHomeType && <span>{displayHomeType}</span>}
                 </div>
 
                 {property.description && (
@@ -287,7 +288,8 @@ export default function PropertyResults({
               </div>
             </div>
           </Link>
-        ))}
+          )
+        })}
       </div>
 
       {/* Pagination */}

@@ -1,6 +1,7 @@
 """
 Script to populate database with properties from NWMLS API.
 Pages through all results using @odata.nextLink until no more pages.
+API config (MLSGRID_BEARER_TOKEN, MLSGRID_API_URL) is read from backend/.env or project root .env.
 """
 import sys
 import os
@@ -10,22 +11,44 @@ from typing import List, Dict, Any
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from dotenv import load_dotenv
+
+# Load environment variables (backend/.env or project root .env)
+backend_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backend")
+backend_env = os.path.join(backend_dir, ".env")
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+root_env = os.path.join(project_root, ".env")
+if os.path.exists(backend_env):
+    load_dotenv(dotenv_path=backend_env)
+elif os.path.exists(root_env):
+    load_dotenv(dotenv_path=root_env)
+else:
+    load_dotenv()
+
 from database.models import init_database, get_session, Property, PropertyMedia
 from services.property_transformer import transform_property, transform_media
 
-# API Configuration
-BEARER_TOKEN = "0ab805914c87f009210f3444be95e11b19e7cf6f"
-API_URL = "https://api-demo.mlsgrid.com/v2/Property?$filter=OriginatingSystemName%20eq%20'nwmls'%20and%20MlgCanView%20eq%20true&$expand=Media&$top=1000"
+# API Configuration from env
+BEARER_TOKEN = os.getenv("MLSGRID_BEARER_TOKEN")
+API_URL = os.getenv("MLSGRID_API_URL")
 
-headers = {
-    "Authorization": f"Bearer {BEARER_TOKEN}",
-    "Accept": "application/json",
-    "Content-Type": "application/json"
-}
+
+def _get_api_headers() -> dict:
+    """Build request headers; raises if API config is missing."""
+    if not BEARER_TOKEN or not API_URL:
+        raise ValueError(
+            "MLS Grid API config missing. Set MLSGRID_BEARER_TOKEN and MLSGRID_API_URL in backend/.env"
+        )
+    return {
+        "Authorization": f"Bearer {BEARER_TOKEN}",
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }
 
 
 def fetch_properties_from_api() -> List[Dict[str, Any]]:
     """Fetch all properties from NWMLS API by following @odata.nextLink until no more pages."""
+    headers = _get_api_headers()
     all_properties: List[Dict[str, Any]] = []
     next_url: str | None = API_URL
     page_num = 1
@@ -77,34 +100,53 @@ def get_database_url(database_url: str = None):
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     return f"sqlite:///{os.path.join(project_root, 'properties.db')}"
 
-def populate_database(database_url: str = None, limit: int | None = None):
-    """Populate database with properties. No limit applied when limit is None."""
+def _apply_property_data(existing: Property, property_data: dict) -> None:
+    """Update existing Property with transformed API data. Skips id and R2-only columns."""
+    skip_keys = {"id", "primary_image_r2_key", "primary_image_r2_url", "primary_image_stored_at"}
+    for key, value in property_data.items():
+        if key in skip_keys:
+            continue
+        if hasattr(Property, key):
+            setattr(existing, key, value)
+
+
+def populate_database(
+    database_url: str = None,
+    limit: int | None = None,
+    refresh: bool = False,
+):
+    """Populate database with properties. No limit applied when limit is None.
+    When refresh=True, existing properties are updated (primary_image_url, media, and other API fields).
+    """
     database_url = get_database_url(database_url)
-    
+
     print("=" * 60)
     print("Populating Database with Properties")
+    if refresh:
+        print("Mode: REFRESH (update existing properties with fresh API data)")
     print("=" * 60)
-    
+
     # Initialize database
     print(f"\n1. Initializing database at: {database_url}")
     engine = init_database(database_url)
     session = get_session(engine)
-    
+
     try:
         # Fetch properties from API
         print("\n2. Fetching properties from API...")
         raw_properties = fetch_properties_from_api()
-        
+
         if limit is not None:
             raw_properties = raw_properties[:limit]
             print(f"\n3. Transforming and inserting up to {limit} properties ({len(raw_properties)} available)...")
         else:
             print(f"\n3. Transforming and inserting all {len(raw_properties)} properties...")
-        
+
         inserted_count = 0
+        updated_count = 0
         skipped_count = 0
         error_count = 0
-        
+
         for idx, raw_prop in enumerate(raw_properties, 1):
             try:
                 # Transform property data
@@ -113,14 +155,42 @@ def populate_database(database_url: str = None, limit: int | None = None):
                 # Check if property already exists
                 existing = session.query(Property).filter_by(id=property_data["id"]).first()
                 if existing:
-                    print(f"  [{idx}/{len(raw_properties)}] Skipping {property_data['id']} (already exists)")
-                    skipped_count += 1
+                    if refresh:
+                        # Update existing: refresh primary_image_url, media URLs, and other API fields
+                        _apply_property_data(existing, property_data)
+                        session.query(PropertyMedia).filter_by(property_id=property_data["id"]).delete()
+                        media_list = transform_media(raw_prop)
+                        for media_data in media_list:
+                            session.add(PropertyMedia(**media_data))
+                        updated_count += 1
+                        if updated_count <= 5 or updated_count % 50 == 0:
+                            print(f"  [{idx}/{len(raw_properties)}] Refreshed {property_data['id']}")
+                    else:
+                        print(f"  [{idx}/{len(raw_properties)}] Skipping {property_data['id']} (already exists)")
+                        skipped_count += 1
+                    # Batch commit for refresh path too
+                    if (inserted_count + updated_count) % 50 == 0 and (inserted_count + updated_count) > 0:
+                        try:
+                            session.flush()
+                            session.commit()
+                            print(f"  [{idx}/{len(raw_properties)}] Committed batch of 50...")
+                        except Exception as commit_error:
+                            print(f"  [{idx}/{len(raw_properties)}] Commit error: {commit_error}")
+                            session.rollback()
+                            error_count += 50
+                            import traceback
+                            traceback.print_exc()
+                            if refresh:
+                                updated_count -= 50
+                            else:
+                                inserted_count -= 50
+                            continue
                     continue
-                
+
                 # Create property object
                 property_obj = Property(**property_data)
                 session.add(property_obj)
-                
+
                 # Transform and add media
                 media_list = transform_media(raw_prop)
                 for media_data in media_list:
@@ -188,13 +258,15 @@ def populate_database(database_url: str = None, limit: int | None = None):
         print("\n" + "=" * 60)
         print("Database Population Complete!")
         print("=" * 60)
-        print(f"✓ Attempted to insert: {inserted_count} properties")
-        print(f"✓ Skipped: {skipped_count} properties (already exist)")
+        print(f"✓ Inserted: {inserted_count} properties")
+        if refresh:
+            print(f"✓ Refreshed: {updated_count} properties (primary_image_url, media, and other API fields)")
+        print(f"✓ Skipped: {skipped_count} properties (already exist, no refresh)")
         print(f"✗ Errors: {error_count} properties")
         print(f"\n📊 Actual Database Counts:")
         print(f"✓ Total properties in database: {actual_property_count}")
         print(f"✓ Total media items in database: {actual_media_count}")
-        
+
         if actual_property_count == 0 and inserted_count > 0:
             print("\n⚠️  WARNING: No properties were actually inserted despite attempts!")
             print("   This suggests commit failures. Check error messages above.")
@@ -211,14 +283,17 @@ def populate_database(database_url: str = None, limit: int | None = None):
 
 if __name__ == "__main__":
     import argparse
-    
+
     parser = argparse.ArgumentParser(description="Populate database with NWMLS properties")
     parser.add_argument("--database", default=None, help="Database URL (overrides DATABASE_URL env var)")
     parser.add_argument("--limit", type=int, default=None, help="Limit number of properties to insert (default: no limit)")
-    
+    parser.add_argument(
+        "--refresh",
+        action="store_true",
+        help="Refresh existing properties: update primary_image_url, media URLs, and other API fields (for re-running migrate_images_to_r2 with fresh signed URLs)",
+    )
     args = parser.parse_args()
-    
-    # Use get_database_url to handle environment variable and defaults
+
     database_url = get_database_url(args.database)
-    populate_database(database_url, args.limit)
+    populate_database(database_url=database_url, limit=args.limit, refresh=args.refresh)
 

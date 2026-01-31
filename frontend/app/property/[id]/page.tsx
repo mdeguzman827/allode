@@ -1,9 +1,16 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import PropertyImageCarousel from '@/components/PropertyImageCarousel'
+
+const TOUR_MESSAGE_PREFIX = (address: string) =>
+  `I would like to schedule a tour for ${address} at ...`
+const DISCLOSURES_MESSAGE_PREFIX = (address: string) =>
+  `I would like to request disclosures for ${address}. `
+const OFFER_MESSAGE_PREFIX = (address: string) =>
+  `I would like to make an offer for ${address}. `
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -135,6 +142,122 @@ export default function PropertyPage() {
     publicFacts: false,
     location: false,
   })
+  const [isTourModalOpen, setIsTourModalOpen] = useState(false)
+  const [tourMessage, setTourMessage] = useState('')
+  const [tourMessageSent, setTourMessageSent] = useState(false)
+  const tourModalRef = useRef<HTMLDivElement>(null)
+
+  const [isDisclosuresModalOpen, setIsDisclosuresModalOpen] = useState(false)
+  const [disclosuresMessage, setDisclosuresMessage] = useState('')
+  const [disclosuresMessageSent, setDisclosuresMessageSent] = useState(false)
+  const disclosuresModalRef = useRef<HTMLDivElement>(null)
+
+  const [isOfferModalOpen, setIsOfferModalOpen] = useState(false)
+  const [offerMessage, setOfferMessage] = useState('')
+  const [offerMessageSent, setOfferMessageSent] = useState(false)
+  const offerModalRef = useRef<HTMLDivElement>(null)
+
+  const handleOpenTourModal = () => {
+    const address = property?.address?.full || ''
+    setTourMessage(TOUR_MESSAGE_PREFIX(address))
+    setTourMessageSent(false)
+    setIsTourModalOpen(true)
+  }
+
+  const handleCloseTourModal = () => {
+    setIsTourModalOpen(false)
+    setTourMessageSent(false)
+  }
+
+  const handleSendTourMessage = () => {
+    setTourMessageSent(true)
+  }
+
+  const handleOpenDisclosuresModal = () => {
+    const address = property?.address?.full || ''
+    setDisclosuresMessage(DISCLOSURES_MESSAGE_PREFIX(address))
+    setDisclosuresMessageSent(false)
+    setIsDisclosuresModalOpen(true)
+  }
+
+  const handleCloseDisclosuresModal = () => {
+    setIsDisclosuresModalOpen(false)
+    setDisclosuresMessageSent(false)
+  }
+
+  const handleSendDisclosuresMessage = () => {
+    setDisclosuresMessageSent(true)
+  }
+
+  const handleOpenOfferModal = () => {
+    const address = property?.address?.full || ''
+    setOfferMessage(OFFER_MESSAGE_PREFIX(address))
+    setOfferMessageSent(false)
+    setIsOfferModalOpen(true)
+  }
+
+  const handleCloseOfferModal = () => {
+    setIsOfferModalOpen(false)
+    setOfferMessageSent(false)
+  }
+
+  const handleSendOfferMessage = () => {
+    setOfferMessageSent(true)
+  }
+
+  const handleTourModalKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') handleCloseTourModal()
+  }
+
+  const handleDisclosuresModalKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') handleCloseDisclosuresModal()
+  }
+
+  const handleOfferModalKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') handleCloseOfferModal()
+  }
+
+  useEffect(() => {
+    if (!isTourModalOpen) return
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        tourModalRef.current &&
+        !tourModalRef.current.contains(event.target as Node)
+      ) {
+        handleCloseTourModal()
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isTourModalOpen])
+
+  useEffect(() => {
+    if (!isDisclosuresModalOpen) return
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        disclosuresModalRef.current &&
+        !disclosuresModalRef.current.contains(event.target as Node)
+      ) {
+        handleCloseDisclosuresModal()
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isDisclosuresModalOpen])
+
+  useEffect(() => {
+    if (!isOfferModalOpen) return
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        offerModalRef.current &&
+        !offerModalRef.current.contains(event.target as Node)
+      ) {
+        handleCloseOfferModal()
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isOfferModalOpen])
 
   const handleToggleSection = (section: string) => {
     setExpandedSections(prev => ({
@@ -910,18 +1033,24 @@ export default function PropertyPage() {
             {/* Request a Tour, Request Disclosures, and Make an Offer Buttons */}
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 space-y-4 sticky top-8">
               <button
+                type="button"
+                onClick={handleOpenTourModal}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
                 aria-label="Request a Tour"
               >
                 Request a Tour
               </button>
               <button
+                type="button"
+                onClick={handleOpenDisclosuresModal}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
                 aria-label="Request Disclosures"
               >
                 Request Disclosures
               </button>
               <button
+                type="button"
+                onClick={handleOpenOfferModal}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
                 aria-label="Make an Offer"
               >
@@ -931,6 +1060,300 @@ export default function PropertyPage() {
           </div>
         </div>
       </main>
+
+      {/* Request a Tour modal */}
+      {isTourModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tour-modal-title"
+          onKeyDown={handleTourModalKeyDown}
+        >
+          <div
+            ref={tourModalRef}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg border border-gray-200 dark:border-gray-700"
+            tabIndex={-1}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 id="tour-modal-title" className="text-lg font-semibold text-gray-900 dark:text-white">
+                Request a Tour
+              </h2>
+              <button
+                type="button"
+                onClick={handleCloseTourModal}
+                className="p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Close modal"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4">
+              {tourMessageSent ? (
+                <div
+                  className="flex flex-col items-center justify-center py-8 text-center"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
+                    <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <p className="text-lg font-medium text-gray-900 dark:text-white mb-1">
+                    Message sent
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    We&apos;ll be in touch soon to schedule your tour.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <label htmlFor="tour-message" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Message
+                  </label>
+                  <textarea
+                    id="tour-message"
+                    value={tourMessage}
+                    onChange={(e) => setTourMessage(e.target.value)}
+                    rows={5}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="I would like to schedule a tour for [address] at ..."
+                    aria-label="Tour request message"
+                  />
+                </>
+              )}
+            </div>
+            <div className="flex justify-end gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
+              {tourMessageSent ? (
+                <button
+                  type="button"
+                  onClick={handleCloseTourModal}
+                  className="px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+                >
+                  Close
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleCloseTourModal}
+                    className="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSendTourMessage}
+                    className="px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+                    aria-label="Send message"
+                  >
+                    Send message
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Request Disclosures modal */}
+      {isDisclosuresModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="disclosures-modal-title"
+          onKeyDown={handleDisclosuresModalKeyDown}
+        >
+          <div
+            ref={disclosuresModalRef}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg border border-gray-200 dark:border-gray-700"
+            tabIndex={-1}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 id="disclosures-modal-title" className="text-lg font-semibold text-gray-900 dark:text-white">
+                Request Disclosures
+              </h2>
+              <button
+                type="button"
+                onClick={handleCloseDisclosuresModal}
+                className="p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Close modal"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4">
+              {disclosuresMessageSent ? (
+                <div
+                  className="flex flex-col items-center justify-center py-8 text-center"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
+                    <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <p className="text-lg font-medium text-gray-900 dark:text-white mb-1">
+                    Message sent
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    We&apos;ll send the disclosures to you soon.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <label htmlFor="disclosures-message" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Message
+                  </label>
+                  <textarea
+                    id="disclosures-message"
+                    value={disclosuresMessage}
+                    onChange={(e) => setDisclosuresMessage(e.target.value)}
+                    rows={5}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="I would like to request disclosures for [address]. "
+                    aria-label="Disclosures request message"
+                  />
+                </>
+              )}
+            </div>
+            <div className="flex justify-end gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
+              {disclosuresMessageSent ? (
+                <button
+                  type="button"
+                  onClick={handleCloseDisclosuresModal}
+                  className="px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+                >
+                  Close
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleCloseDisclosuresModal}
+                    className="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSendDisclosuresMessage}
+                    className="px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+                    aria-label="Send message"
+                  >
+                    Send message
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Make an Offer modal */}
+      {isOfferModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="offer-modal-title"
+          onKeyDown={handleOfferModalKeyDown}
+        >
+          <div
+            ref={offerModalRef}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg border border-gray-200 dark:border-gray-700"
+            tabIndex={-1}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 id="offer-modal-title" className="text-lg font-semibold text-gray-900 dark:text-white">
+                Make an Offer
+              </h2>
+              <button
+                type="button"
+                onClick={handleCloseOfferModal}
+                className="p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Close modal"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4">
+              {offerMessageSent ? (
+                <div
+                  className="flex flex-col items-center justify-center py-8 text-center"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
+                    <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <p className="text-lg font-medium text-gray-900 dark:text-white mb-1">
+                    Message sent
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    We&apos;ll be in touch soon regarding your offer.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <label htmlFor="offer-message" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Message
+                  </label>
+                  <textarea
+                    id="offer-message"
+                    value={offerMessage}
+                    onChange={(e) => setOfferMessage(e.target.value)}
+                    rows={5}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="I would like to make an offer for [address]. "
+                    aria-label="Offer message"
+                  />
+                </>
+              )}
+            </div>
+            <div className="flex justify-end gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
+              {offerMessageSent ? (
+                <button
+                  type="button"
+                  onClick={handleCloseOfferModal}
+                  className="px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+                >
+                  Close
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleCloseOfferModal}
+                    className="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSendOfferMessage}
+                    className="px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+                    aria-label="Send message"
+                  >
+                    Send message
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

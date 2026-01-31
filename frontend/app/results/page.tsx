@@ -376,7 +376,7 @@ export default function ResultsPage() {
                 values={statusFilter}
                 options={statusOptions}
                 onChange={handleStatusChange}
-                placeholder="For Sale"
+                placeholder="Status"
               />
               <PriceRangeFilter
                 minPrice={minPriceFilter}
@@ -406,16 +406,20 @@ export default function ResultsPage() {
                 onChange={handleHomeTypeChange}
                 placeholder="Home Type"
               />
-              {hasActiveFilters && (
-                <button
-                  type="button"
-                  onClick={handleClearAllFilters}
-                  className="px-4 py-2.5 rounded-lg bg-transparent text-gray-900 dark:text-gray-100 text-sm font-medium hover:opacity-80 transition-opacity"
-                  aria-label="Clear filters"
-                >
-                  Clear Filters
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={handleClearAllFilters}
+                disabled={!hasActiveFilters}
+                className={`px-4 py-2.5 rounded-lg bg-transparent text-sm font-medium transition-opacity ${
+                  hasActiveFilters
+                    ? 'text-gray-900 dark:text-gray-100 hover:opacity-80 cursor-pointer'
+                    : 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                }`}
+                aria-label="Clear filters"
+                aria-disabled={!hasActiveFilters}
+              >
+                Clear Filters
+              </button>
             </div>
           </div>
         </div>

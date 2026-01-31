@@ -48,7 +48,7 @@ const MultiSelectFilter = ({
       ? values.filter((v) => v !== optionValue)
       : [...values, optionValue]
     onChange(newValues)
-    setIsOpen(false)
+    // Keep dropdown open so user can select multiple options
   }
 
   const handleClear = (e: React.MouseEvent) => {

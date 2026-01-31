@@ -20,6 +20,11 @@ DATABASE_URL=
 NWMLS_USERNAME=130725
 NWMLS_PASSWORD=SexyDexy082790/
 
+# MLS Grid API (for populate_database and scripts that need property/media data)
+# Get bearer token from your MLS Grid account; API URL is the OData Property endpoint with $expand=Media
+MLSGRID_BEARER_TOKEN=your_mlsgrid_bearer_token_here
+MLSGRID_API_URL=https://api-demo.mlsgrid.com/v2/Property?$filter=OriginatingSystemName%20eq%20'nwmls'%20and%20MlgCanView%20eq%20true&$expand=Media&$top=1000
+
 # Cloudflare R2 Storage Configuration
 # Get these from Cloudflare Dashboard > R2 > Manage R2 API Tokens
 # Account ID is found in the right sidebar of your Cloudflare dashboard
