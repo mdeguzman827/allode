@@ -27,7 +27,7 @@ export default function Home() {
               The Flat Fee Brokerage for Buyers
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400">
-              We charge a flat fee of $4,995 after closing, and we'll walk you through the entire process. Buyers will receive all of the commission offered by the seller, minus our flat fee.
+              We charge a flat fee of $4,995 after closing, and we'll walk you through the entire process. Buyers will receive all of the commission offered by the seller, minus the flat fee.
             </p>
           </div>
         </div>
