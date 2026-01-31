@@ -195,7 +195,7 @@ export default function ResultsPage() {
     zipcode?: string
     page?: number
     sortBy?: string
-    status?: string | null
+    status?: string | string[] | null
     minPrice?: number | null
     maxPrice?: number | null
     bedrooms?: number | null
