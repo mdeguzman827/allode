@@ -243,7 +243,7 @@ export default function PropertyResults({
                     </p>
                   </div>
                   <span className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full text-sm">
-                    {property.propertyDetails.mlsStatus || property.propertyDetails.status}
+                    {property.propertyDetails.mlsStatus ?? property.propertyDetails.status}
                   </span>
                 </div>
 

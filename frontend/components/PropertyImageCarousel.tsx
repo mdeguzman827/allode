@@ -160,6 +160,7 @@ export default function PropertyImageCarousel({
                     e.stopPropagation()
                   }}
                 />
+                {/* Badge on primary photo: MlsStatus (raw MLS value) */}
                 {mlsStatus && (() => {
                   const isSold = mlsStatus.toLowerCase() === 'sold'
                   const formatDate = (dateStr: string | null | undefined): string => {

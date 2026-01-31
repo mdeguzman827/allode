@@ -239,7 +239,7 @@ export default function PropertyPage() {
             images={property.images}
             propertyAddress={property.address.full}
             propertyId={property.id}
-            mlsStatus={property.propertyDetails.mlsStatus}
+            mlsStatus={property.propertyDetails.mlsStatus ?? undefined}
             closeDate={property.propertyDetails.closeDate}
           />
       </div>

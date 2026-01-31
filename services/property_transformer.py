@@ -81,6 +81,46 @@ HOME_TYPE_BY_SUBTYPE = {
 }
 
 
+# Values that indicate Land for PropertyType or PropertySubType (case-insensitive)
+_LAND_TYPE_VALUES = {"land", "vacant land", "vacant lot", "rural land"}
+
+# MlsStatus -> derived Status for display/filtering (case-insensitive key match)
+_MLS_STATUS_TO_STATUS: dict[str, str] = {
+    "Active": "For Sale",
+    "Contingent": "Pending",
+    "Pending": "Pending",
+    "Pending - Backup Offer Requested": "Pending",
+    "Pending Feasibility": "Pending",
+    "Pending Inspection": "Pending",
+    "Pending Short Sale": "Pending",
+    "Sold": "Sold",
+}
+
+
+def get_status_from_mls_status(mls_status: Optional[str]) -> Optional[str]:
+    """
+    Derive Status from MlsStatus.
+    Returns one of: For Sale, Pending, Sold, or None if unknown.
+    """
+    if not mls_status or not isinstance(mls_status, str):
+        return None
+    normalized = mls_status.strip()
+    if not normalized:
+        return None
+    for key, status in _MLS_STATUS_TO_STATUS.items():
+        if key.lower() == normalized.lower():
+            return status
+    return None
+
+
+def _is_land_type(value: Optional[str]) -> bool:
+    """Return True if the given type/subtype string indicates Land."""
+    if not value or not isinstance(value, str):
+        return False
+    normalized = value.strip().lower()
+    return normalized in _LAND_TYPE_VALUES
+
+
 def get_home_type_from_subtype(subtype: Optional[str]) -> Optional[str]:
     """
     Derive HomeType from PropertySubtype.
@@ -96,6 +136,17 @@ def get_home_type_from_subtype(subtype: Optional[str]) -> Optional[str]:
         if key.lower() == normalized.lower():
             return home_type
     return "Other"
+
+
+def get_home_type_from_property(property_type: Optional[str], property_sub_type: Optional[str]) -> Optional[str]:
+    """
+    Derive HomeType from PropertyType and PropertySubType.
+    If either is Land (or Vacant Land, Vacant Lot, Rural Land), returns "Land".
+    Otherwise uses subtype mapping.
+    """
+    if _is_land_type(property_type) or _is_land_type(property_sub_type):
+        return "Land"
+    return get_home_type_from_subtype(property_sub_type)
 
 
 def safe_convert(value):
@@ -162,7 +213,7 @@ def transform_property(raw_property: Dict[str, Any]) -> Dict[str, Any]:
         "unparsed_address": safe_convert(raw_property.get("UnparsedAddress")),
         "property_type": safe_convert(raw_property.get("PropertyType")),
         "property_sub_type": safe_convert(raw_property.get("PropertySubType")),
-        "home_type": get_home_type_from_subtype(raw_property.get("PropertySubType")),
+        "home_type": get_home_type_from_property(raw_property.get("PropertyType"), raw_property.get("PropertySubType")),
         "bedrooms_total": raw_property.get("BedroomsTotal"),
         "bathrooms_total_integer": raw_property.get("BathroomsTotalInteger"),
         "bathrooms_full": raw_property.get("BathroomsFull"),
@@ -171,6 +222,7 @@ def transform_property(raw_property: Dict[str, Any]) -> Dict[str, Any]:
         "lot_size_square_feet": raw_property.get("LotSizeSquareFeet"),
         "year_built": raw_property.get("YearBuilt"),
         "standard_status": safe_convert(raw_property.get("StandardStatus")),
+        "status": get_status_from_mls_status(raw_property.get("MlsStatus")),
         "latitude": raw_property.get("Latitude"),
         "longitude": raw_property.get("Longitude"),
         "public_remarks": safe_convert(raw_property.get("PublicRemarks")),
@@ -407,7 +459,7 @@ def transform_for_frontend(property_obj, media_items: Optional[List] = None) -> 
             "squareFeet": property_obj.living_area,
             "lotSize": property_obj.lot_size_square_feet,
             "yearBuilt": property_obj.year_built,
-            "status": property_obj.standard_status,
+            "status": getattr(property_obj, "status", None) or property_obj.standard_status,
             # All additional property details
             "appliances": getattr(property_obj, 'appliances', None),
             "architecturalStyle": getattr(property_obj, 'architectural_style', None),

@@ -313,11 +313,9 @@ export default function ResultsPage() {
 
   // Filter options
   const statusOptions = [
-    { value: 'Active', label: 'For Sale' },
+    { value: 'For Sale', label: 'For Sale' },
     { value: 'Pending', label: 'Pending' },
     { value: 'Sold', label: 'Sold' },
-    { value: 'Withdrawn', label: 'Withdrawn' },
-    { value: 'Expired', label: 'Expired' },
   ]
 
   const priceOptions = [

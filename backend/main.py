@@ -290,11 +290,11 @@ async def get_properties(
                 ]
                 query = query.filter(or_(*home_type_conditions))
         if status:
-            # Support multiple status values (comma-separated)
+            # Filter by derived status column (For Sale, Pending, Sold); case-insensitive
             status_list = [s.strip() for s in status.split(',') if s.strip()]
             if status_list:
                 status_conditions = [
-                    Property.standard_status.ilike(f"%{s}%") for s in status_list
+                    func.lower(Property.status) == func.lower(s) for s in status_list
                 ]
                 query = query.filter(or_(*status_conditions))
 

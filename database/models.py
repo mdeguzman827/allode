@@ -43,7 +43,8 @@ class Property(Base):
     lot_size_square_feet = Column(Float)
     year_built = Column(Integer)
     standard_status = Column(String, index=True)
-    
+    status = Column(String, index=True)  # Derived from MlsStatus: For Sale, Pending, Sold
+
     # Location (for geospatial search)
     latitude = Column(Float)
     longitude = Column(Float)
