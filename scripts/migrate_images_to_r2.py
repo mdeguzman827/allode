@@ -34,8 +34,19 @@ else:
 from sqlalchemy import or_, and_
 from sqlalchemy.sql import exists
 from sqlalchemy.pool import NullPool
+from sqlalchemy.exc import OperationalError, DBAPIError
 from database.models import get_engine, get_session, Property, PropertyMedia
 from services.image_processor import ImageProcessor
+
+MAX_CONNECTION_RETRIES = 3
+
+
+def _is_connection_error(exc: BaseException) -> bool:
+    """True if the exception indicates a DB connection failure (e.g. server closed connection)."""
+    if isinstance(exc, (OperationalError, DBAPIError)):
+        return True
+    msg = str(exc).lower()
+    return "connection" in msg or "closed the connection" in msg or "server closed" in msg
 
 
 class ThreadSafeRateLimiter:
@@ -81,54 +92,71 @@ def _process_one_property(
 ) -> dict:
     """
     Process one property's images (one session per worker).
+    Retries up to MAX_CONNECTION_RETRIES times on DB connection errors (e.g. server closed connection).
     Returns dict with keys: status ('success' | 'skipped' | 'error'), message, property_id.
     """
-    session = get_session(engine)
-    try:
-        results = processor.process_property_images(
-            property_id=property_id,
-            db=session,
-            force_reprocess=False,
-        )
-        session.commit()
+    last_error: BaseException | None = None
+    for attempt in range(1, MAX_CONNECTION_RETRIES + 1):
+        session = get_session(engine)
+        try:
+            results = processor.process_property_images(
+                property_id=property_id,
+                db=session,
+                force_reprocess=False,
+            )
+            session.commit()
 
-        if results.get("error"):
-            return {"status": "error", "message": results["error"], "property_id": property_id}
-        if results.get("errors"):
-            return {"status": "error", "message": "; ".join(results["errors"]), "property_id": property_id}
+            if results.get("error"):
+                return {"status": "error", "message": results["error"], "property_id": property_id}
+            if results.get("errors"):
+                return {"status": "error", "message": "; ".join(results["errors"]), "property_id": property_id}
 
-        primary_stored = results.get("primary_image", {}).get("status") == "already_stored"
-        media_stored = all(
-            img.get("status") == "already_stored"
-            for img in results.get("media_images", [])
-        )
-        if primary_stored and media_stored and not results.get("primary_image", {}).get("r2_key"):
-            return {"status": "skipped", "message": "already stored", "property_id": property_id}
+            primary_stored = results.get("primary_image", {}).get("status") == "already_stored"
+            media_stored = all(
+                img.get("status") == "already_stored"
+                for img in results.get("media_images", [])
+            )
+            if primary_stored and media_stored and not results.get("primary_image", {}).get("r2_key"):
+                return {"status": "skipped", "message": "already stored", "property_id": property_id}
 
-        primary_info = results.get("primary_image", {})
-        media_count = len(results.get("media_images", []))
-        msg_parts = []
-        if primary_info.get("r2_key"):
-            msg_parts.append(f"primary: {primary_info['r2_key']}")
-        if media_count > 0:
-            msg_parts.append(f"{media_count} media")
-        return {"status": "success", "message": "; ".join(msg_parts), "property_id": property_id}
-    except Exception as e:
-        session.rollback()
-        return {"status": "error", "message": str(e), "property_id": property_id}
-    finally:
-        session.close()
+            primary_info = results.get("primary_image", {})
+            media_count = len(results.get("media_images", []))
+            msg_parts = []
+            if primary_info.get("r2_key"):
+                msg_parts.append(f"primary: {primary_info['r2_key']}")
+            if media_count > 0:
+                msg_parts.append(f"{media_count} media")
+            return {"status": "success", "message": "; ".join(msg_parts), "property_id": property_id}
+        except Exception as e:
+            last_error = e
+            try:
+                session.rollback()
+            except Exception:
+                pass
+            if _is_connection_error(e) and attempt < MAX_CONNECTION_RETRIES:
+                time.sleep(1)
+                continue
+            return {"status": "error", "message": str(e), "property_id": property_id}
+        finally:
+            try:
+                session.close()
+            except Exception:
+                pass
+    return {"status": "error", "message": str(last_error or "Unknown"), "property_id": property_id}
 
 
 def migrate_all_properties(
     batch_size: int = 10,
     limit: int = None,
-    max_requests_per_second: float = 6.0,
+    max_requests_per_second: float = 0,
     workers: int = 8,
+    property_ids: list | None = None,
+    database_url: str | None = None,
 ):
-    """Migrate all property images to R2 using parallel workers and one session per worker."""
+    """Migrate property images to R2. If property_ids is given, only those IDs are processed; otherwise all properties needing migration are loaded from the DB."""
     try:
-        database_url = os.getenv("DATABASE_PUBLIC_URL")
+        if not database_url:
+            database_url = os.getenv("DATABASE_PUBLIC_URL")
         if not database_url:
             project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             database_path = os.path.join(project_root, "properties.db")
@@ -148,8 +176,8 @@ def migrate_all_properties(
             print("Rate limiting: disabled")
         print()
 
-        # Use NullPool for multi-threaded SQLite so each worker gets its own connection
-        if "sqlite" in database_url and workers > 1:
+        # Use NullPool when multiple workers so each worker gets its own connection (avoids QueuePool exhaustion)
+        if workers > 1:
             from sqlalchemy import create_engine
             engine = create_engine(database_url, echo=False, poolclass=NullPool)
         else:
@@ -163,7 +191,7 @@ def migrate_all_properties(
         traceback.print_exc()
         return
 
-    # Load only property IDs that still need migration (primary or media missing R2)
+    # Load property IDs: either use provided list or query for those needing migration
     session = get_session(engine)
     try:
         primary_needs = and_(
@@ -183,36 +211,45 @@ def migrate_all_properties(
                 ),
             )
         )
-        query = (
-            session.query(Property.id)
-            .filter(or_(primary_needs, media_needs))
-            .distinct()
-        )
-        if limit:
-            query = query.limit(limit)
-        property_ids = [row[0] for row in query.all()]
-
-        # Count total images to upload (primary + media) for estimated time
-        primary_count = (
-            session.query(Property)
-            .filter(Property.id.in_(property_ids), primary_needs)
-            .count()
-        )
-        media_count = (
-            session.query(PropertyMedia)
-            .filter(
-                PropertyMedia.property_id.in_(property_ids),
-                PropertyMedia.media_url.isnot(None),
-                or_(
-                    PropertyMedia.r2_key.is_(None),
-                    PropertyMedia.r2_key == "",
-                ),
+        if property_ids is not None:
+            # Only process the given IDs (e.g. after a batch insert in populate_database)
+            ids_list = list(property_ids)
+        else:
+            query = (
+                session.query(Property.id)
+                .filter(or_(primary_needs, media_needs))
+                .distinct()
             )
-            .count()
-        )
-        total_images = primary_count + media_count
+            if limit:
+                query = query.limit(limit)
+            ids_list = [row[0] for row in query.all()]
+
+        # Count total images for estimated time (only when we have IDs)
+        if ids_list:
+            primary_count = (
+                session.query(Property)
+                .filter(Property.id.in_(ids_list), primary_needs)
+                .count()
+            )
+            media_count = (
+                session.query(PropertyMedia)
+                .filter(
+                    PropertyMedia.property_id.in_(ids_list),
+                    PropertyMedia.media_url.isnot(None),
+                    or_(
+                        PropertyMedia.r2_key.is_(None),
+                        PropertyMedia.r2_key == "",
+                    ),
+                )
+                .count()
+            )
+            total_images = primary_count + media_count
+        else:
+            total_images = 0
     finally:
         session.close()
+
+    property_ids = ids_list
 
     total = len(property_ids)
     if total == 0:
@@ -288,8 +325,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--max-requests-per-second",
         type=float,
-        default=6.0,
-        help="Throttle image downloads (default: 6; set 0 to disable)",
+        default=0,
+        help="Throttle image downloads (default: 0 = disabled; set e.g. 6 to limit req/sec)",
     )
     parser.add_argument(
         "--workers",

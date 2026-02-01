@@ -560,13 +560,14 @@ async def autocomplete(
                         "relevance": "prefix"
                     })
         
-        # Sort by relevance (prefix first, then contains), then by type priority, then alphabetically
+        # Sort by relevance (prefix first), then by type priority, then by count descending (most results first), then alphabetically
         type_priority = {"zipcode": 0, "address": 1, "city": 2} if query_starts_with_number else {"city": 0, "address": 1, "zipcode": 2}
         suggestions = sorted(
             suggestions,
             key=lambda x: (
                 x.get("relevance") != "prefix",  # Prefix matches first
                 type_priority.get(x["type"], 3),  # Primary type first based on query
+                -x.get("count", 1),  # Most results first (address has 1 per row)
                 x["display"].lower()
             )
         )[:limit]

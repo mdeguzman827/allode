@@ -197,9 +197,29 @@ class PropertyMedia(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-def get_engine(database_url: str = "sqlite:///properties.db"):
-    """Create database engine"""
-    return create_engine(database_url, echo=False)
+# Recycle connections after 10 minutes so they don't outlive server idle timeout
+POOL_RECYCLE_SECONDS = 10 * 60  # 10 min
+
+
+def get_engine(
+    database_url: str = "sqlite:///properties.db",
+    pool_size: int = 20,
+    max_overflow: int = 20,
+    pool_timeout: int = 60,
+    pool_recycle: int = POOL_RECYCLE_SECONDS,
+):
+    """Create database engine with a connection pool sized for concurrent use (e.g. multi-worker scripts)."""
+    # SQLite uses NullPool when needed elsewhere; here we use default pool with larger size for PostgreSQL
+    if database_url.startswith("sqlite"):
+        return create_engine(database_url, echo=False)
+    return create_engine(
+        database_url,
+        echo=False,
+        pool_size=pool_size,
+        max_overflow=max_overflow,
+        pool_timeout=pool_timeout,
+        pool_recycle=pool_recycle,
+    )
 
 
 def get_session(engine):

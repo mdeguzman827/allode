@@ -140,7 +140,7 @@ export default function PropertyResults({
     <div className="mt-12">
       <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
         <p className="text-gray-600 dark:text-gray-400">
-          Found {data.total} {data.total === 1 ? 'property' : 'properties'} for &quot;{searchQuery}&quot;
+          Found {data.total.toLocaleString()} {data.total === 1 ? 'property' : 'properties'} for &quot;{searchQuery}&quot;
         </p>
         
         {/* Sort Dropdown */}
@@ -360,7 +360,7 @@ export default function PropertyResults({
 
           {/* Page Info */}
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Showing {((currentPage - 1) * data.pageSize) + 1} to {Math.min(currentPage * data.pageSize, data.total)} of {data.total} properties
+            Showing {(((currentPage - 1) * data.pageSize) + 1).toLocaleString()} to {(Math.min(currentPage * data.pageSize, data.total)).toLocaleString()} of {data.total.toLocaleString()} properties
           </p>
         </div>
       )}

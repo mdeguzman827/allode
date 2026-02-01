@@ -196,7 +196,7 @@ export default function PropertySearch({
               if (suggestions.length > 0 && isUserTyping) setShowSuggestions(true)
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Enter property address or city"
+            placeholder="Address, city, or zip code"
             className={`flex-1 outline-none bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 ${isLarge ? 'text-lg' : 'text-sm'}`}
             disabled={isLoading}
             aria-label="Property search with autocomplete"
@@ -209,6 +209,18 @@ export default function PropertySearch({
               <div className={`animate-spin rounded-full border-b-2 border-gray-400 ${isLarge ? 'h-5 w-5' : 'h-4 w-4'}`}></div>
             </div>
           )}
+          <button
+            type="submit"
+            disabled={isLoading}
+            onClick={() => {
+              setShowSuggestions(false)
+              setSuggestions([])
+            }}
+            className={`ml-3 flex-shrink-0 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium transition-colors ${isLarge ? 'text-base' : 'text-sm'}`}
+            aria-label="Search"
+          >
+            Search
+          </button>
         </div>
 
         {/* Autocomplete Suggestions */}

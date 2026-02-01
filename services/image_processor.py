@@ -169,50 +169,54 @@ class ImageProcessor:
         image_index: int
     ) -> Optional[dict]:
         """
-        Download image from source URL and upload to R2
-        
-        Args:
-            source_url: Original image URL (from NWMLS)
-            property_id: Property ID
-            image_index: Image index
-            
-        Returns:
-            dict with r2_key, r2_url, file_size, content_type
+        Download image from source URL and upload to R2.
+        Retries up to 3 times on failure, then raises.
         """
-        try:
-            if self.rate_limiter:
-                self.rate_limiter.wait()
-            
-            # Download from NWMLS
-            response = requests.get(
-                source_url,
-                timeout=(10, 30),  # 10s connect, 30s read
-                headers={
-                    'User-Agent': 'Mozilla/5.0 (compatible; Allode/1.0)'
-                },
-                stream=True
-            )
-            response.raise_for_status()
-            
-            # Get content type
-            content_type = response.headers.get('Content-Type', 'image/jpeg')
-            
-            # Read image data
-            image_data = response.content
-            
-            # Upload to R2
-            result = self.r2_storage.upload_image(
-                image_data=image_data,
-                property_id=property_id,
-                image_index=image_index,
-                content_type=content_type,
-                optimize=True  # Enable optimization
-            )
-            
-            return result
-            
-        except requests.exceptions.RequestException as e:
-            raise Exception(f"Failed to download image: {str(e)}")
-        except Exception as e:
-            raise Exception(f"Failed to store image: {str(e)}")
+        max_retries = 3
+        last_error: Optional[Exception] = None
+
+        for attempt in range(1, max_retries + 1):
+            try:
+                if self.rate_limiter:
+                    self.rate_limiter.wait()
+
+                # Download from NWMLS
+                response = requests.get(
+                    source_url,
+                    timeout=(10, 30),  # 10s connect, 30s read
+                    headers={
+                        'User-Agent': 'Mozilla/5.0 (compatible; Allode/1.0)'
+                    },
+                    stream=True
+                )
+                response.raise_for_status()
+
+                # Get content type
+                content_type = response.headers.get('Content-Type', 'image/jpeg')
+
+                # Read image data
+                image_data = response.content
+
+                # Upload to R2
+                result = self.r2_storage.upload_image(
+                    image_data=image_data,
+                    property_id=property_id,
+                    image_index=image_index,
+                    content_type=content_type,
+                    optimize=True  # Enable optimization
+                )
+
+                return result
+
+            except requests.exceptions.RequestException as e:
+                last_error = Exception(f"Failed to download image: {str(e)}")
+            except Exception as e:
+                last_error = Exception(f"Failed to store image: {str(e)}")
+
+            if attempt < max_retries:
+                time.sleep(1)  # Brief delay before retry
+
+        if last_error:
+            raise last_error
+        raise Exception("Failed after retries")
 
