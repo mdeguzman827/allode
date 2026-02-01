@@ -59,7 +59,7 @@ const fetchProperties = async (
     homeType?: string[] | null
   }
 ): Promise<PropertiesResponse> => {
-  if (!address && !city && !zipcode) {
+  if (!address && !city && !state && !zipcode) {
     return { properties: [], total: 0, page: 1, pageSize: 20, hasMore: false, totalPages: 0 }
   }
 
@@ -137,6 +137,7 @@ export default function ResultsPage() {
     if (address) return address
     if (zipcode) return zipcode
     if (city) return `${city}${state ? `, ${state}` : ''}`
+    if (state) return state
     return ''
   }, [address, city, state, zipcode])
 
@@ -159,8 +160,8 @@ export default function ResultsPage() {
   
   // Check if we have any search criteria
   const hasSearchCriteria = useMemo(() => {
-    return !!(normalizedAddress || normalizedCity || normalizedZipcode)
-  }, [normalizedAddress, normalizedCity, normalizedZipcode])
+    return !!(normalizedAddress || normalizedCity || normalizedState || normalizedZipcode)
+  }, [normalizedAddress, normalizedCity, normalizedState, normalizedZipcode])
   
   // Memoize filters object
   const filters = useMemo(() => ({
