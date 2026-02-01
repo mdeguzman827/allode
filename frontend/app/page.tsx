@@ -24,7 +24,7 @@ export default function Home() {
         <div className="flex flex-col justify-end items-center pb-6">
           <div className="w-full max-w-2xl text-center">
             <h2 className="text-4xl font-light text-gray-900 dark:text-gray-100 mb-4">
-              The Flat Fee Brokerage for Buyers
+              The Flat Fee Brokerage for Homebuyers
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400">
               We charge a flat fee of $4,995 after closing, and we'll walk you through the entire process. Buyers will receive all of the commission offered by the seller, minus our flat fee.

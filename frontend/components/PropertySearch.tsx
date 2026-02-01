@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface Suggestion {
-  type: 'address' | 'city' | 'zipcode'
+  type: 'address' | 'city' | 'zipcode' | 'state'
   value: string
   city: string
   state: string
@@ -104,6 +104,9 @@ export default function PropertySearch({
     } else if (suggestion.type === 'zipcode' && suggestion.zipCode) {
       // Navigate to results page with zip code
       router.push(`/results?zipcode=${encodeURIComponent(suggestion.zipCode)}`)
+    } else if (suggestion.type === 'state' && suggestion.state) {
+      // Navigate to results page with state only (all listings in that state)
+      router.push(`/results?state=${encodeURIComponent(suggestion.state)}`)
     }
   }
 
@@ -273,6 +276,20 @@ export default function PropertySearch({
                           d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                         />
                       </svg>
+                    ) : suggestion.type === 'state' ? (
+                      <svg
+                        className="w-5 h-5 text-gray-400 flex-shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+                        />
+                      </svg>
                     ) : (
                       <svg
                         className="w-5 h-5 text-gray-400 flex-shrink-0"
@@ -293,7 +310,7 @@ export default function PropertySearch({
                     </span>
                   </div>
                   <span className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">
-                    {suggestion.type === 'address' ? 'Property' : suggestion.type === 'zipcode' ? 'Zip Code' : 'City'}
+                    {suggestion.type === 'address' ? 'Property' : suggestion.type === 'zipcode' ? 'Zip Code' : suggestion.type === 'state' ? 'State' : 'City'}
                   </span>
                 </div>
               </button>

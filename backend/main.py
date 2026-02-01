@@ -472,7 +472,53 @@ async def autocomplete(
                         })
         
         else:
-            # Prioritize cities - get prefix matches first
+            # Prioritize states - get prefix/contains matches (e.g. "Wa" or "WA" → Washington)
+            state_prefix_query = db.query(
+                Property.state_or_province,
+                func.count(Property.id).label('count')
+            ).filter(
+                Property.state_or_province.isnot(None),
+                Property.state_or_province.ilike(prefix_term)
+            ).group_by(Property.state_or_province).limit(max(3, limit // 2)).all()
+
+            for state_val, count in state_prefix_query:
+                if state_val:
+                    suggestions.append({
+                        "type": "state",
+                        "value": state_val,
+                        "city": "",
+                        "state": state_val,
+                        "count": count,
+                        "display": f"{state_val} ({count} properties)",
+                        "relevance": "prefix"
+                    })
+
+            if len(suggestions) < limit:
+                state_prefix_set = {s[0] for s in state_prefix_query if s[0]}
+                state_contains_query = db.query(
+                    Property.state_or_province,
+                    func.count(Property.id).label('count')
+                ).filter(
+                    Property.state_or_province.isnot(None),
+                    Property.state_or_province.ilike(contains_term)
+                ).group_by(Property.state_or_province).limit((limit - len(suggestions)) * 2).all()
+                state_contains_query = [
+                    (s, c) for s, c in state_contains_query
+                    if s and s not in state_prefix_set
+                ][:limit - len(suggestions)]
+                for state_val, count in state_contains_query:
+                    if state_val:
+                        suggestions.append({
+                            "type": "state",
+                            "value": state_val,
+                            "city": "",
+                            "state": state_val,
+                            "count": count,
+                            "display": f"{state_val} ({count} properties)",
+                            "relevance": "contains"
+                        })
+
+            # Then cities - get prefix matches first
             city_prefix_query = db.query(
                 Property.city,
                 Property.state_or_province,
@@ -561,7 +607,7 @@ async def autocomplete(
                     })
         
         # Sort by relevance (prefix first), then by type priority, then by count descending (most results first), then alphabetically
-        type_priority = {"zipcode": 0, "address": 1, "city": 2} if query_starts_with_number else {"city": 0, "address": 1, "zipcode": 2}
+        type_priority = {"zipcode": 0, "address": 1, "city": 2, "state": 3} if query_starts_with_number else {"state": 0, "city": 1, "address": 2, "zipcode": 3}
         suggestions = sorted(
             suggestions,
             key=lambda x: (
