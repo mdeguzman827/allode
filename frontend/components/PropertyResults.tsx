@@ -60,6 +60,19 @@ const getStatusLabel = (mlsStatus: string | undefined, status: string): string =
   return mlsStatus
 }
 
+/** Badge colors to match property page: For Sale/Contingent → green, Pending → yellow, Sold → black. */
+const getStatusBadgeColor = (mlsStatus: string | undefined): string => {
+  if (!mlsStatus) return 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+  const normalized = mlsStatus.toLowerCase().trim()
+  const isForSale = normalized === 'active' || normalized === 'contingent'
+  const isPending = normalized === 'pending' || normalized.startsWith('pending')
+  const isSold = normalized === 'sold'
+  if (isSold) return 'bg-black text-white'
+  if (isPending) return 'bg-yellow-500 text-gray-900'
+  if (isForSale) return 'bg-green-600 text-white'
+  return 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+}
+
 // Component to handle "No Image" placeholder with debug logging
 const NoImagePlaceholder = ({ property }: { property: Property }) => {
   const hasLoggedRef = useRef(false)
@@ -259,7 +272,7 @@ export default function PropertyResults({
                       {property.address.full}
                     </p>
                   </div>
-                  <span className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full text-sm">
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusBadgeColor(property.propertyDetails.mlsStatus)}`}>
                     {getStatusLabel(property.propertyDetails.mlsStatus, property.propertyDetails.status)}
                   </span>
                 </div>
