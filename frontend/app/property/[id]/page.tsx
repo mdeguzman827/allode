@@ -354,6 +354,25 @@ export default function PropertyPage() {
     )
   }
 
+  const formatDataUpdatedDate = (dateStr: string | null | undefined): string => {
+    if (!dateStr) return 'N/A'
+    try {
+      const d = new Date(dateStr)
+      if (Number.isNaN(d.getTime())) return dateStr
+      const month = d.getMonth() + 1
+      const day = d.getDate()
+      const year = d.getFullYear()
+      const hours = d.getHours()
+      const minutes = d.getMinutes()
+      const hour12 = hours % 12 || 12
+      const ampm = hours < 12 ? 'am' : 'pm'
+      const minStr = minutes === 0 ? '' : `:${String(minutes).padStart(2, '0')}`
+      return `${month}/${day}/${year} ${hour12}${minStr} ${ampm}`
+    } catch {
+      return dateStr
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Image Gallery - Full Width */}
@@ -556,25 +575,7 @@ export default function PropertyPage() {
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-gray-500 dark:text-gray-400">Data last updated</span>
-                      <span className="text-gray-900 dark:text-white">
-                        {(() => {
-                          try {
-                            const d = new Date(property.lastPopulateRun!)
-                            if (Number.isNaN(d.getTime())) return property.lastPopulateRun
-                            const month = d.getMonth() + 1
-                            const day = d.getDate()
-                            const year = d.getFullYear()
-                            const hours = d.getHours()
-                            const minutes = d.getMinutes()
-                            const hour12 = hours % 12 || 12
-                            const ampm = hours < 12 ? 'am' : 'pm'
-                            const minStr = minutes === 0 ? '' : `:${String(minutes).padStart(2, '0')}`
-                            return `${month}/${day}/${year} ${hour12}${minStr} ${ampm}`
-                          } catch {
-                            return property.lastPopulateRun
-                          }
-                        })()}
-                      </span>
+                      <span className="text-gray-900 dark:text-white">{formatDataUpdatedDate(property.lastPopulateRun)}</span>
                     </div>
                   </div>
                 )}
@@ -1086,6 +1087,11 @@ export default function PropertyPage() {
               </div>
           </div>
         </div>
+
+        {/* MLS disclaimer */}
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+          Based on information submitted to the MLS GRID as of {formatDataUpdatedDate(property.lastPopulateRun)}. All data is obtained from various sources and may not have been verified by broker or MLS GRID. Supplied Open House Information is subject to change without notice. All information should be independently reviewed and verified for accuracy. Properties may or may not be listed by the office/agent presenting the information.
+        </p>
       </main>
 
       {/* Request a Tour modal */}

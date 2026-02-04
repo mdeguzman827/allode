@@ -139,7 +139,7 @@ export default function PropertyImageCarousel({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-1 h-[400px] md:h-[450px] rounded-lg overflow-hidden">
           {/* Primary Image - Large on Left */}
           <div 
-            className="relative col-span-1 md:col-span-2 overflow-hidden bg-gray-100 dark:bg-gray-900 cursor-pointer group rounded-lg"
+            className="relative col-span-1 md:col-span-2 overflow-hidden bg-black cursor-pointer group rounded-lg"
             onClick={() => handleImageClick(primaryIndex)}
           >
             {primaryImage ? (
