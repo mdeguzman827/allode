@@ -361,7 +361,7 @@ export default function PropertyPage() {
       if (Number.isNaN(d.getTime())) return dateStr
       const formatter = new Intl.DateTimeFormat('en-US', {
         timeZone: 'America/Los_Angeles',
-        month: 'numeric',
+        month: 'short',
         day: 'numeric',
         year: 'numeric',
         hour: 'numeric',
@@ -377,7 +377,7 @@ export default function PropertyPage() {
       const minute = get('minute')
       const dayPeriod = get('dayPeriod').toLowerCase()
       const minStr = minute ? `:${minute}` : ''
-      return `${month}/${day}/${year} ${hour}${minStr} ${dayPeriod} PST`
+      return `${month} ${day}, ${year} ${hour}${minStr} ${dayPeriod} PST`
     } catch {
       return dateStr
     }

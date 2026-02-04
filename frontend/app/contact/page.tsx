@@ -319,7 +319,7 @@ export default function ContactPage() {
               </p>
               <p>
                 <span className="font-medium text-gray-900 dark:text-gray-100">Business Hours:</span>{' '}
-                Monday - Friday, 9:00 AM - 6:00 PM PST
+                Monday - Friday, 8:00 AM - 5:00 PM PST
               </p>
             </div>
           </div>

@@ -10,6 +10,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Allode - The Flat Fee Real Estate Brokerage for Homebuyers',
   description: 'Search for properties with ease',
+  icons: {
+    icon: '/logo.svg',
+  },
 }
 
 export default function RootLayout({
