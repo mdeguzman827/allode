@@ -51,6 +51,15 @@ interface PropertyResultsProps {
   onSortChange: (sortBy: string) => void
 }
 
+/** Display label for status on property card: Active → "For Sale", Contingent → "For Sale - Contingent", else mlsStatus or status. */
+const getStatusLabel = (mlsStatus: string | undefined, status: string): string => {
+  if (!mlsStatus) return status
+  const normalized = mlsStatus.trim()
+  if (normalized.toLowerCase() === 'active') return 'For Sale'
+  if (normalized.toLowerCase() === 'contingent') return 'For Sale - Contingent'
+  return mlsStatus
+}
+
 // Component to handle "No Image" placeholder with debug logging
 const NoImagePlaceholder = ({ property }: { property: Property }) => {
   const hasLoggedRef = useRef(false)
@@ -251,7 +260,7 @@ export default function PropertyResults({
                     </p>
                   </div>
                   <span className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full text-sm">
-                    {property.propertyDetails.mlsStatus ?? property.propertyDetails.status}
+                    {getStatusLabel(property.propertyDetails.mlsStatus, property.propertyDetails.status)}
                   </span>
                 </div>
 

@@ -509,22 +509,11 @@ export default function PropertyPage() {
                     {property.description}
                   </p>
                 )}
-                {property.lastPopulateRun && (
-                  <div className={property.description ? "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700" : ""}>
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      Data last updated
-                    </p>
-                    <p className="text-gray-900 dark:text-white text-sm">
-                      {property.lastPopulateRun}
-                    </p>
-                  </div>
-                )}
                 {(property.propertyDetails.sourceSystemName || property.mlsNumber) && (
-                  <div className={(property.description || property.lastPopulateRun) ? "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700" : ""}>
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      Source
-                    </p>
-                    <div className="text-gray-900 dark:text-white flex items-center gap-2 flex-wrap">
+                  <div className={property.description ? "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700" : ""}>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-gray-500 dark:text-gray-400">Source</span>
+                      <span className="text-gray-900 dark:text-white flex items-center gap-2 flex-wrap">
                       {(() => {
                         const sourceSystemName = property.propertyDetails.sourceSystemName || ''
                         const mlsNumber = property.mlsNumber || ''
@@ -559,6 +548,33 @@ export default function PropertyPage() {
                           </>
                         )
                       })()}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                {property.lastPopulateRun && (
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-gray-500 dark:text-gray-400">Data last updated</span>
+                      <span className="text-gray-900 dark:text-white">
+                        {(() => {
+                          try {
+                            const d = new Date(property.lastPopulateRun!)
+                            if (Number.isNaN(d.getTime())) return property.lastPopulateRun
+                            const month = d.getMonth() + 1
+                            const day = d.getDate()
+                            const year = d.getFullYear()
+                            const hours = d.getHours()
+                            const minutes = d.getMinutes()
+                            const hour12 = hours % 12 || 12
+                            const ampm = hours < 12 ? 'am' : 'pm'
+                            const minStr = minutes === 0 ? '' : `:${String(minutes).padStart(2, '0')}`
+                            return `${month}/${day}/${year} ${hour12}${minStr} ${ampm}`
+                          } catch {
+                            return property.lastPopulateRun
+                          }
+                        })()}
+                      </span>
                     </div>
                   </div>
                 )}

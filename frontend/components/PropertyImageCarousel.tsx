@@ -148,7 +148,7 @@ export default function PropertyImageCarousel({
                   src={primaryImage.url}
                   alt={`${propertyAddress} - Primary Image`}
                   fill
-                  className="object-cover transition-transform group-hover:scale-105"
+                  className="object-contain transition-transform group-hover:scale-105"
                   priority
                   fetchPriority="high"
                   sizes="(max-width: 768px) 100vw, 66vw"
