@@ -57,6 +57,7 @@ const fetchProperties = async (
     bedrooms?: number | null
     bathrooms?: number | null
     homeType?: string[] | null
+    internetAddressDisplayValues?: string[] | null
   }
 ): Promise<PropertiesResponse> => {
   if (!address && !city && !state && !zipcode) {
@@ -99,6 +100,10 @@ const fetchProperties = async (
     if (filters.homeType && filters.homeType.length > 0) {
       params.set('home_type', filters.homeType.join(','))
     }
+    // Single value for API: only send when exactly one of true/false is selected
+    if (filters.internetAddressDisplayValues?.length === 1) {
+      params.set('internet_address_display', filters.internetAddressDisplayValues[0] === 'true' ? 'true' : 'false')
+    }
   }
 
   const response = await fetch(
@@ -131,6 +136,10 @@ export default function ResultsPage() {
   const bathroomsFilter = searchParams.get('bathrooms') ? parseInt(searchParams.get('bathrooms')!, 10) : null
   const homeTypeFilterParam = searchParams.get('home_type') || ''
   const homeTypeFilter = homeTypeFilterParam ? homeTypeFilterParam.split(',').filter(Boolean) : []
+  const internetAddressDisplayParam = searchParams.get('internet_address_display') || ''
+  const internetAddressDisplayFilter: string[] = internetAddressDisplayParam
+    ? internetAddressDisplayParam.split(',').filter((v) => v === 'true' || v === 'false')
+    : []
 
   // Memoize display query to prevent unnecessary re-renders
   const displayQuery = useMemo(() => {
@@ -171,7 +180,8 @@ export default function ResultsPage() {
     bedrooms: bedroomsFilter,
     bathrooms: bathroomsFilter,
     homeType: homeTypeFilter,
-  }), [statusFilter, minPriceFilter, maxPriceFilter, bedroomsFilter, bathroomsFilter, homeTypeFilter])
+    internetAddressDisplayValues: internetAddressDisplayFilter,
+  }), [statusFilter, minPriceFilter, maxPriceFilter, bedroomsFilter, bathroomsFilter, homeTypeFilter, internetAddressDisplayFilter])
 
   // Memoize the query function to prevent unnecessary re-renders
   const queryFn = useCallback(() => {
@@ -202,6 +212,7 @@ export default function ResultsPage() {
     bedrooms?: number | null
     bathrooms?: number | null
     homeType?: string[] | null
+    internetAddressDisplay?: string[] | null
   }) => {
     const params = new URLSearchParams()
     
@@ -218,7 +229,8 @@ export default function ResultsPage() {
     const currentBedrooms = updates.bedrooms !== undefined ? updates.bedrooms : bedroomsFilter
     const currentBathrooms = updates.bathrooms !== undefined ? updates.bathrooms : bathroomsFilter
     const currentHomeType = updates.homeType !== undefined ? updates.homeType : (homeTypeFilter.length > 0 ? homeTypeFilter : null)
-    
+    const currentInternetAddressDisplay = updates.internetAddressDisplay !== undefined ? updates.internetAddressDisplay : internetAddressDisplayFilter
+
     if (currentAddress) params.set('address', currentAddress)
     if (currentCity) params.set('city', currentCity)
     if (currentState) params.set('state', currentState)
@@ -240,9 +252,12 @@ export default function ResultsPage() {
     } else if (currentHomeType && !Array.isArray(currentHomeType)) {
       params.set('home_type', currentHomeType)
     }
-    
+    if (currentInternetAddressDisplay && Array.isArray(currentInternetAddressDisplay) && currentInternetAddressDisplay.length > 0) {
+      params.set('internet_address_display', currentInternetAddressDisplay.join(','))
+    }
+
     router.push(`/results?${params.toString()}`)
-  }, [address, city, state, zipcode, page, sortBy, statusFilter, minPriceFilter, maxPriceFilter, bedroomsFilter, bathroomsFilter, homeTypeFilter, router])
+  }, [address, city, state, zipcode, page, sortBy, statusFilter, minPriceFilter, maxPriceFilter, bedroomsFilter, bathroomsFilter, homeTypeFilter, internetAddressDisplayFilter, router])
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -264,7 +279,7 @@ export default function ResultsPage() {
   }
 
   const handleFilterChange = (filterType: 'status' | 'minPrice' | 'maxPrice' | 'bedrooms' | 'bathrooms' | 'homeType', value: string | number | string[] | null) => {
-    const updates: any = { page: 1 }
+    const updates: Record<string, unknown> = { page: 1 }
     if (filterType === 'status') {
       updates.status = value as string[] | null
     } else if (filterType === 'minPrice') {
@@ -279,6 +294,10 @@ export default function ResultsPage() {
       updates.homeType = value as string[] | null
     }
     updateURLParams(updates)
+  }
+
+  const handleInternetAddressDisplayChange = (values: string[]) => {
+    updateURLParams({ internetAddressDisplay: values.length > 0 ? values : null, page: 1 })
   }
 
   const handleHomeTypeChange = (values: string[]) => {
@@ -296,9 +315,10 @@ export default function ResultsPage() {
       maxPriceFilter !== null ||
       bedroomsFilter !== null ||
       bathroomsFilter !== null ||
-      homeTypeFilter.length > 0
+      homeTypeFilter.length > 0 ||
+      internetAddressDisplayFilter.length > 0
     )
-  }, [statusFilter.length, minPriceFilter, maxPriceFilter, bedroomsFilter, bathroomsFilter, homeTypeFilter.length])
+  }, [statusFilter.length, minPriceFilter, maxPriceFilter, bedroomsFilter, bathroomsFilter, homeTypeFilter.length, internetAddressDisplayFilter.length])
 
   const handleClearAllFilters = () => {
     const params = new URLSearchParams()
@@ -354,6 +374,11 @@ export default function ResultsPage() {
     { value: 'Other', label: 'Other' },
   ]
 
+  const internetAddressDisplayOptions = [
+    { value: 'true', label: 'True' },
+    { value: 'false', label: 'False' },
+  ]
+
   return (
     <main className="min-h-screen flex flex-col bg-white dark:bg-gray-800">
       {/* Search Bar and Filters */}
@@ -406,6 +431,13 @@ export default function ResultsPage() {
                 options={homeTypeOptions}
                 onChange={handleHomeTypeChange}
                 placeholder="Home Type"
+              />
+              <MultiSelectFilter
+                label="InternetAddressDisplayYN"
+                values={internetAddressDisplayFilter}
+                options={internetAddressDisplayOptions}
+                onChange={handleInternetAddressDisplayChange}
+                placeholder="InternetAddressDisplayYN"
               />
               <button
                 type="button"

@@ -87,7 +87,7 @@ _LAND_TYPE_VALUES = {"land", "vacant land", "vacant lot", "rural land"}
 # MlsStatus -> derived Status for display/filtering (case-insensitive key match)
 _MLS_STATUS_TO_STATUS: dict[str, str] = {
     "Active": "For Sale",
-    "Contingent": "Pending",
+    "Contingent": "For Sale",
     "Pending": "Pending",
     "Pending - Backup Offer Requested": "Pending",
     "Pending Feasibility": "Pending",
@@ -263,6 +263,7 @@ def transform_property(raw_property: Dict[str, Any]) -> Dict[str, Any]:
         "high_school_district": safe_convert(raw_property.get("HighSchoolDistrict")),
         "inclusions": convert_to_string(raw_property.get("Inclusions")),
         "interior_features": convert_to_string(raw_property.get("InteriorFeatures")),
+        "internet_address_display_yn": convert_boolean(raw_property.get("InternetAddressDisplayYN")),
         "levels": safe_convert(raw_property.get("Levels")),
         "listing_agent_full_name": safe_convert(raw_property.get("ListingAgentFullName")),
         "list_office_name": safe_convert(raw_property.get("ListOfficeName")),
@@ -486,6 +487,7 @@ def transform_for_frontend(property_obj, media_items: Optional[List] = None) -> 
             "highSchoolDistrict": getattr(property_obj, 'high_school_district', None),
             "inclusions": getattr(property_obj, 'inclusions', None),
             "interiorFeatures": getattr(property_obj, 'interior_features', None),
+            "internetAddressDisplayYN": getattr(property_obj, 'internet_address_display_yn', None),
             "levels": getattr(property_obj, 'levels', None),
             "listingAgentFullName": getattr(property_obj, 'list_agent_full_name', None) or getattr(property_obj, 'listing_agent_full_name', None),
             "listOfficeName": getattr(property_obj, 'list_office_name', None),

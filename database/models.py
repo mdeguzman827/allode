@@ -98,6 +98,7 @@ class Property(Base):
     high_school_district = Column(String)
     inclusions = Column(Text)
     interior_features = Column(Text)
+    internet_address_display_yn = Column(Boolean)
     levels = Column(String)
     listing_agent_full_name = Column(String)
     list_office_name = Column(String)

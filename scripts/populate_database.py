@@ -6,6 +6,7 @@ API config (MLSGRID_BEARER_TOKEN, MLSGRID_API_URL) is read from backend/.env or 
 import sys
 import os
 import time
+from datetime import datetime
 import requests
 from typing import List, Dict, Any, Tuple, Optional
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
@@ -92,10 +93,10 @@ def _first_page_url_with_top(top: int = API_BATCH_SIZE) -> str:
     return urlunparse(parsed._replace(query=new_query))
 
 
-def fetch_next_page(next_url: str | None, page_num: int) -> Tuple[List[Dict[str, Any]], str | None]:
-    """Fetch one page from the API. Returns (list of properties, next_link or None)."""
+def fetch_next_page(next_url: str | None, page_num: int, batch_size: int = API_BATCH_SIZE) -> Tuple[List[Dict[str, Any]], str | None]:
+    """Fetch one page from the API. Returns (list of properties, next_link or None). batch_size used only for first page."""
     headers = _get_api_headers()
-    url = next_url if next_url is not None else _first_page_url_with_top()
+    url = next_url if next_url is not None else _first_page_url_with_top(batch_size)
     response = requests.get(url, headers=headers)
     if response.status_code != 200:
         raise Exception(f"API request failed: {response.status_code} - {response.text}")
@@ -149,16 +150,23 @@ def populate_database(
     database_url: str = None,
     limit: int | None = None,
     refresh: bool = False,
+    batch_size: int = API_BATCH_SIZE,
+    skip_r2: bool = False,
 ):
     """Populate database with properties. No limit applied when limit is None.
     When refresh=True, existing properties are updated (primary_image_url, media, and other API fields).
+    When skip_r2=True, images are not uploaded to R2 (database and API data only).
     """
     database_url = get_database_url(database_url)
 
+    run_started_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print("=" * 60)
     print("Populating Database with Properties")
+    print(f"Run started: {run_started_at}")
     if refresh:
         print("Mode: REFRESH (update existing properties with fresh API data)")
+    if skip_r2:
+        print("Mode: SKIP R2 (images will not be uploaded to R2)")
     print("=" * 60)
 
     # Initialize database
@@ -184,8 +192,8 @@ def populate_database(
             if limit is not None and total_inserted >= limit:
                 break
             page_num += 1
-            print(f"\n2. Fetching batch {page_num} (up to {API_BATCH_SIZE} from API)...")
-            page_properties, next_url = fetch_next_page(next_url, page_num)
+            print(f"\n2. Fetching batch {page_num} (up to {batch_size} from API)...")
+            page_properties, next_url = fetch_next_page(next_url, page_num, batch_size)
             if not page_properties:
                 print(f"  No more data.")
                 break
@@ -310,7 +318,7 @@ def populate_database(
 
             total_inserted += len(to_process)
 
-            if batch_ids:
+            if batch_ids and not skip_r2:
                 print(f"  3. Migrating images to R2 for {len(batch_ids)} properties...")
                 try:
                     _migrate_batch_to_r2(batch_ids, database_url)
@@ -342,9 +350,19 @@ def populate_database(
             new_session.close()
 
         total_elapsed = time.perf_counter() - start_time
+        run_ended_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # Persist timestamp so backend can show "Data last updated" on property pages
+        _last_populate_path = os.path.join(_project_root, "backend", "last_populate_run.txt")
+        try:
+            with open(_last_populate_path, "w") as f:
+                f.write(run_ended_at)
+        except OSError as e:
+            print(f"  (Could not write last populate timestamp: {e})")
         print("\n" + "=" * 60)
         print("Database Population Complete!")
         print("=" * 60)
+        print(f"Run started: {run_started_at}")
+        print(f"Run ended:   {run_ended_at}")
         print(f"⏱ Total time: {_format_elapsed(total_elapsed)}")
         print(f"✓ Inserted: {inserted_count} properties")
         if refresh:
@@ -380,8 +398,26 @@ if __name__ == "__main__":
         action="store_true",
         help="Refresh existing properties: update primary_image_url, media URLs, and other API fields (for re-running migrate_images_to_r2 with fresh signed URLs)",
     )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=API_BATCH_SIZE,
+        metavar="N",
+        help=f"Number of properties to fetch per API page (default: {API_BATCH_SIZE})",
+    )
+    parser.add_argument(
+        "--no-r2",
+        action="store_true",
+        help="Skip uploading images to R2; only insert/update database and API data",
+    )
     args = parser.parse_args()
 
     database_url = get_database_url(args.database)
-    populate_database(database_url=database_url, limit=args.limit, refresh=args.refresh)
+    populate_database(
+        database_url=database_url,
+        limit=args.limit,
+        refresh=args.refresh,
+        batch_size=args.batch_size,
+        skip_r2=args.no_r2,
+    )
 

@@ -127,6 +127,7 @@ interface Property {
   agent: { name: string; email: string; phone: string } | null
   listingDate: string | null
   lastUpdated: string | null
+  lastPopulateRun?: string | null
 }
 
 export default function PropertyPage() {
@@ -498,7 +499,7 @@ export default function PropertyPage() {
             </div>
 
             {/* Description */}
-            {(property.description || property.propertyDetails.sourceSystemName || property.mlsNumber) && (
+            {(property.description || property.propertyDetails.sourceSystemName || property.mlsNumber || property.lastPopulateRun) && (
               <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                   Description
@@ -508,8 +509,18 @@ export default function PropertyPage() {
                     {property.description}
                   </p>
                 )}
-                {(property.propertyDetails.sourceSystemName || property.mlsNumber) && (
+                {property.lastPopulateRun && (
                   <div className={property.description ? "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700" : ""}>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      Data last updated
+                    </p>
+                    <p className="text-gray-900 dark:text-white text-sm">
+                      {property.lastPopulateRun}
+                    </p>
+                  </div>
+                )}
+                {(property.propertyDetails.sourceSystemName || property.mlsNumber) && (
+                  <div className={(property.description || property.lastPopulateRun) ? "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700" : ""}>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
                       Source
                     </p>

@@ -47,6 +47,19 @@ from services.image_processor import ImageProcessor
 image_cache = {}
 CACHE_DURATION_HOURS = 24  # Cache images for 24 hours
 
+LAST_POPULATE_RUN_FILE = os.path.join(backend_dir, "last_populate_run.txt")
+
+
+def _read_last_populate_run() -> Optional[str]:
+    """Read the date/time of the last populate_database run from backend/last_populate_run.txt."""
+    try:
+        if os.path.exists(LAST_POPULATE_RUN_FILE):
+            with open(LAST_POPULATE_RUN_FILE) as f:
+                return f.read().strip() or None
+    except OSError:
+        pass
+    return None
+
 # Initialize R2 storage and image processor (will fail gracefully if not configured)
 try:
     r2_storage = R2Storage()
@@ -243,6 +256,7 @@ async def get_properties(
     bathrooms: Optional[int] = Query(None, ge=0, description="Number of bathrooms"),
     home_type: Optional[str] = Query(None, description="Home type: Single Family, Multi Family, Condo, Land, Manufactured, Other"),
     status: Optional[str] = Query(None, description="Listing status"),
+    internet_address_display: Optional[bool] = Query(None, description="Filter by internet address display (true/false)"),
     db: Session = Depends(get_db)
 ):
     """
@@ -258,6 +272,7 @@ async def get_properties(
     - bedrooms, bathrooms
     - home_type
     - status
+    - internet_address_display
     """
     try:
         # Build query
@@ -297,6 +312,8 @@ async def get_properties(
                     func.lower(Property.status) == func.lower(s) for s in status_list
                 ]
                 query = query.filter(or_(*status_conditions))
+        if internet_address_display is not None:
+            query = query.filter(Property.internet_address_display_yn == internet_address_display)
 
         
         # Get total count (before applying sorting)
@@ -641,7 +658,9 @@ async def get_property_by_id(
             property_id=property_id
         ).order_by(PropertyMedia.order).all()
         
-        return transform_for_frontend(property_obj, media_items)
+        result = transform_for_frontend(property_obj, media_items)
+        result["lastPopulateRun"] = _read_last_populate_run()
+        return result
     
     except HTTPException:
         raise
