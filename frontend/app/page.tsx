@@ -17,36 +17,27 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col">
-      {/* Main Content - Search bar centered in viewport */}
-      <div className="flex-1 grid grid-rows-[1fr_auto_1fr] min-h-0 px-4">
-        {/* Top row: title and description aligned to bottom */}
-        <div className="flex flex-col justify-end items-center pb-6">
-          <div className="w-full max-w-2xl text-center">
-            <h2 className="text-4xl font-light text-gray-900 dark:text-gray-100 mb-4">
-              The Flat Fee Brokerage for Homebuyers
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-400">
-              We charge a flat fee of $4,995 after closing, and we'll walk you through the entire process. Buyers will receive all of the commission offered by the seller, minus our flat fee.
-            </p>
-          </div>
+    <main className="flex-1 flex flex-col justify-center px-4 py-12 sm:py-16">
+      {/* Hero and search - vertically centered in the page */}
+      <div className="w-full max-w-2xl mx-auto flex flex-col items-center gap-10">
+        <div className="text-center">
+          <h2 className="text-4xl font-light text-gray-900 dark:text-gray-100 mb-4">
+            The Flat Fee Brokerage for Homebuyers
+          </h2>
+          <p className="text-lg text-gray-600 dark:text-gray-400">
+            We charge a flat fee of $4,995 after closing, and we&apos;ll walk you through the entire process. Buyers will receive all of the commission offered by the seller, minus our flat fee.
+          </p>
         </div>
-        {/* Middle row: search bar (vertically centered on page) */}
-        <div className="flex justify-center items-center">
-          <div className="w-full max-w-2xl">
-            <PropertySearch
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              onSearch={handleSearch}
-              isLoading={false}
-              size="large"
-            />
-          </div>
+        <div className="w-full">
+          <PropertySearch
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            onSearch={handleSearch}
+            isLoading={false}
+            size="large"
+          />
         </div>
-        {/* Bottom row: empty spacer */}
-        <div />
       </div>
-
     </main>
   )
 }

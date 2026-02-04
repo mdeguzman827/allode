@@ -125,9 +125,31 @@ export default function PropertyImageCarousel({
   }, [filteredImages.length, showFullCarousel])
 
   if (!filteredImages || filteredImages.length === 0) {
+    const getStatusBadge = () => {
+      if (!mlsStatus) return null
+      const normalized = mlsStatus.toLowerCase().trim()
+      const isForSale = normalized === 'active' || normalized === 'contingent'
+      const isPending = normalized === 'pending' || normalized.startsWith('pending')
+      const isSold = normalized === 'sold'
+      const badgeColor = isSold
+        ? 'bg-black text-white'
+        : isPending
+          ? 'bg-yellow-500 text-gray-900'
+          : isForSale
+            ? 'bg-green-600 text-white'
+            : 'bg-gray-600 text-white'
+      return (
+        <div className={`absolute top-4 left-4 px-3 py-1.5 rounded-full text-sm font-medium border-2 border-white ${badgeColor}`}>
+          {mlsStatus}
+        </div>
+      )
+    }
     return (
-      <div className="w-full h-96 bg-gray-200 dark:bg-gray-800 rounded-lg flex items-center justify-center">
-        <span className="text-gray-400 text-lg">No Images Available</span>
+      <div className="w-full h-[400px] md:h-[450px] rounded-lg overflow-hidden relative bg-gray-200 dark:bg-gray-800">
+        {getStatusBadge()}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-gray-400 text-lg">No Images Available</span>
+        </div>
       </div>
     )
   }
@@ -160,33 +182,22 @@ export default function PropertyImageCarousel({
                     e.stopPropagation()
                   }}
                 />
-                {/* Badge on primary photo: MlsStatus (raw MLS value) */}
+                {/* Badge on primary photo: MlsStatus with color by status (For Sale=green, Pending=yellow, Sold=black) */}
                 {mlsStatus && (() => {
-                  const isSold = mlsStatus.toLowerCase() === 'sold'
-                  const formatDate = (dateStr: string | null | undefined): string => {
-                    if (!dateStr) return ''
-                    try {
-                      const date = new Date(dateStr)
-                      const month = date.toLocaleDateString('en-US', { month: 'short' })
-                      const day = date.getDate()
-                      const year = date.getFullYear()
-                      return `${month} ${day}, ${year}`
-                    } catch {
-                      return ''
-                    }
-                  }
-                  
-                  const displayText = isSold && closeDate 
-                    ? `Sold ${formatDate(closeDate)}`
-                    : mlsStatus
-                  
+                  const normalized = mlsStatus.toLowerCase().trim()
+                  const isForSale = normalized === 'active' || normalized === 'contingent'
+                  const isPending = normalized === 'pending' || normalized.startsWith('pending')
+                  const isSold = normalized === 'sold'
+                  const badgeColor = isSold
+                    ? 'bg-black text-white'
+                    : isPending
+                      ? 'bg-yellow-500 text-gray-900'
+                      : isForSale
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-600 text-white'
                   return (
-                    <div className={`absolute top-4 left-4 px-3 py-1.5 rounded-full text-sm font-medium border-2 border-white ${
-                      isSold 
-                        ? 'bg-black text-white' 
-                        : 'bg-blue-600 text-white'
-                    }`}>
-                      {displayText}
+                    <div className={`absolute top-4 left-4 px-3 py-1.5 rounded-full text-sm font-medium border-2 border-white ${badgeColor}`}>
+                      {mlsStatus}
                     </div>
                   )
                 })()}
