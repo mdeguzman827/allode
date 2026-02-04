@@ -1,6 +1,40 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
+
+const FAQ_ITEMS = [
+  {
+    id: 'what-is-flat-fee',
+    question: 'What does the flat fee cover?',
+    answer:
+      'The $4,995 flat fee covers full buyer representation: your licensed agent helps you search, make offers, negotiate, manage inspections and contingencies, and guide you to closing. You keep any commission offered by the seller minus our fee—no percentage of the sale price.',
+  },
+  {
+    id: 'when-do-i-pay',
+    question: 'When do I pay the $4,995?',
+    answer:
+      'You pay Allode’s flat fee after closing, when the sale is complete. There’s no upfront cost to work with us.',
+  },
+  {
+    id: 'full-representation',
+    question: 'Do I get the same service as with a traditional agent?',
+    answer:
+      'Yes. You get a licensed buyer’s agent who represents only you, writes and submits offers, negotiates on your behalf, and coordinates inspections, appraisals, and closing—the same full service you’d expect from a traditional brokerage.',
+  },
+  {
+    id: 'areas-served',
+    question: 'What areas do you serve?',
+    answer:
+      'We serve homebuyers in our service areas. Use our site to search listings and reach out via the Contact page to confirm we can represent you in your target area.',
+  },
+  {
+    id: 'selling-and-buying',
+    question: 'Can I use Allode if I’m also selling a home?',
+    answer:
+      'Allode focuses on representing buyers. If you’re selling and buying, contact us and we can discuss how we can help with your purchase.',
+  },
+] as const
 
 const STEPS = [
   {
@@ -30,6 +64,19 @@ const STEPS = [
 ] as const
 
 export default function HowItWorksPage() {
+  const [openFaqId, setOpenFaqId] = useState<string | null>(null)
+
+  const handleFaqToggle = (id: string) => {
+    setOpenFaqId((prev) => (prev === id ? null : id))
+  }
+
+  const handleFaqKeyDown = (e: React.KeyboardEvent, id: string) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleFaqToggle(id)
+    }
+  }
+
   return (
     <main className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-12">
@@ -83,6 +130,60 @@ export default function HowItWorksPage() {
               </section>
             ))}
           </div>
+
+          <section className="mt-12" aria-labelledby="faq-heading">
+            <h2
+              id="faq-heading"
+              className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-6"
+            >
+              Frequently asked questions
+            </h2>
+            <ul className="space-y-2" role="list">
+              {FAQ_ITEMS.map((item) => {
+                const isOpen = openFaqId === item.id
+                const answerId = `${item.id}-answer`
+                const buttonId = `${item.id}-button`
+                return (
+                  <li
+                    key={item.id}
+                    className="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden"
+                  >
+                    <button
+                      id={buttonId}
+                      type="button"
+                      onClick={() => handleFaqToggle(item.id)}
+                      onKeyDown={(e) => handleFaqKeyDown(e, item.id)}
+                      aria-expanded={isOpen}
+                      aria-controls={answerId}
+                      className="w-full flex items-center justify-between gap-4 px-4 py-4 text-left bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+                      tabIndex={0}
+                    >
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {item.question}
+                      </span>
+                      <span
+                        className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+                        aria-hidden
+                      >
+                        {isOpen ? '−' : '+'}
+                      </span>
+                    </button>
+                    <div
+                      id={answerId}
+                      role="region"
+                      aria-labelledby={buttonId}
+                      hidden={!isOpen}
+                      className="border-t border-gray-200 dark:border-gray-600"
+                    >
+                      <p className="px-4 py-4 text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/30">
+                        {item.answer}
+                      </p>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          </section>
 
           <div className="mt-10 p-6 bg-gray-50 dark:bg-gray-700/30 rounded-lg border border-gray-200 dark:border-gray-600">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
