@@ -148,7 +148,7 @@ export default function PropertyImageCarousel({
                   src={primaryImage.url}
                   alt={`${propertyAddress} - Primary Image`}
                   fill
-                  className="object-contain transition-transform group-hover:scale-105"
+                  className="object-cover transition-transform group-hover:scale-105"
                   priority
                   fetchPriority="high"
                   sizes="(max-width: 768px) 100vw, 66vw"
@@ -214,7 +214,7 @@ export default function PropertyImageCarousel({
                         src={image.url}
                         alt={`${propertyAddress} - Image ${imageIndex + 1}`}
                         fill
-                        className="object-contain transition-transform group-hover:scale-105"
+                        className="object-cover transition-transform group-hover:scale-105"
                         sizes="(max-width: 768px) 50vw, 17vw"
                         loading="eager"
                         fetchPriority={idx < 2 ? "high" : "auto"}
