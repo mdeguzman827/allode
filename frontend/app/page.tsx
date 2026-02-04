@@ -47,10 +47,6 @@ export default function Home() {
         <div />
       </div>
 
-      {/* Footer */}
-      <footer className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-        <p>Allode Real Estate Platform</p>
-      </footer>
     </main>
   )
 }

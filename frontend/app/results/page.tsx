@@ -485,10 +485,6 @@ export default function ResultsPage() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="p-6 text-center text-sm text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700">
-        <p>Allode Real Estate Platform</p>
-      </footer>
     </main>
   )
 }

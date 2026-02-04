@@ -22,13 +22,6 @@ export default function Header() {
         </Link>
         <nav className="flex items-center gap-6">
           <Link 
-            href="/terms" 
-            className="text-base font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
-            aria-label="Terms of Use"
-          >
-            Terms of Use
-          </Link>
-          <Link 
             href="/contact" 
             className="text-base font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
             aria-label="Contact us"
