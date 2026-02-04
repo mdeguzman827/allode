@@ -359,15 +359,25 @@ export default function PropertyPage() {
     try {
       const d = new Date(dateStr)
       if (Number.isNaN(d.getTime())) return dateStr
-      const month = d.getMonth() + 1
-      const day = d.getDate()
-      const year = d.getFullYear()
-      const hours = d.getHours()
-      const minutes = d.getMinutes()
-      const hour12 = hours % 12 || 12
-      const ampm = hours < 12 ? 'am' : 'pm'
-      const minStr = minutes === 0 ? '' : `:${String(minutes).padStart(2, '0')}`
-      return `${month}/${day}/${year} ${hour12}${minStr} ${ampm}`
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Los_Angeles',
+        month: 'numeric',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      })
+      const parts = formatter.formatToParts(d)
+      const get = (type: Intl.DateTimeFormatPart['type']) => parts.find((p) => p.type === type)?.value ?? ''
+      const month = get('month')
+      const day = get('day')
+      const year = get('year')
+      const hour = get('hour')
+      const minute = get('minute')
+      const dayPeriod = get('dayPeriod').toLowerCase()
+      const minStr = minute ? `:${minute}` : ''
+      return `${month}/${day}/${year} ${hour}${minStr} ${dayPeriod} PST`
     } catch {
       return dateStr
     }
@@ -574,7 +584,7 @@ export default function PropertyPage() {
                 {property.lastPopulateRun && (
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-gray-500 dark:text-gray-400">Data last updated</span>
+                      <span className="font-medium text-gray-500 dark:text-gray-400">Data last refreshed</span>
                       <span className="text-gray-900 dark:text-white">{formatDataUpdatedDate(property.lastPopulateRun)}</span>
                     </div>
                   </div>

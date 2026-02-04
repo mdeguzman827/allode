@@ -138,9 +138,10 @@ export default function PropertyImageCarousel({
           : isForSale
             ? 'bg-green-600 text-white'
             : 'bg-gray-600 text-white'
+      const displayText = normalized === 'contingent' ? 'For Sale - Contingent' : mlsStatus
       return (
         <div className={`absolute top-4 left-4 px-3 py-1.5 rounded-full text-sm font-medium border-2 border-white ${badgeColor}`}>
-          {mlsStatus}
+          {displayText}
         </div>
       )
     }
@@ -195,9 +196,10 @@ export default function PropertyImageCarousel({
                       : isForSale
                         ? 'bg-green-600 text-white'
                         : 'bg-gray-600 text-white'
+                  const displayText = normalized === 'contingent' ? 'For Sale - Contingent' : mlsStatus
                   return (
                     <div className={`absolute top-4 left-4 px-3 py-1.5 rounded-full text-sm font-medium border-2 border-white ${badgeColor}`}>
-                      {mlsStatus}
+                      {displayText}
                     </div>
                   )
                 })()}

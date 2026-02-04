@@ -7,6 +7,7 @@ import sys
 import os
 import time
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import requests
 from typing import List, Dict, Any, Tuple, Optional
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
@@ -159,7 +160,8 @@ def populate_database(
     """
     database_url = get_database_url(database_url)
 
-    run_started_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    _pacific = ZoneInfo("America/Los_Angeles")
+    run_started_at = datetime.now(_pacific).isoformat()
     print("=" * 60)
     print("Populating Database with Properties")
     print(f"Run started: {run_started_at}")
@@ -350,7 +352,7 @@ def populate_database(
             new_session.close()
 
         total_elapsed = time.perf_counter() - start_time
-        run_ended_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        run_ended_at = datetime.now(_pacific).isoformat()
         # Persist timestamp so backend can show "Data last updated" on property pages
         _last_populate_path = os.path.join(_project_root, "backend", "last_populate_run.txt")
         try:
