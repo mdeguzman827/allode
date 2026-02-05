@@ -1068,16 +1068,8 @@ export default function PropertyPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Request a Tour, Request Disclosures, and Make an Offer Buttons */}
+            {/* Request Disclosures, Schedule a Tour, and Make an Offer Buttons */}
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 space-y-4 sticky top-8">
-              <button
-                type="button"
-                onClick={handleOpenTourModal}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-                aria-label="Request a Tour"
-              >
-                Request a Tour
-              </button>
               <button
                 type="button"
                 onClick={handleOpenDisclosuresModal}
@@ -1085,6 +1077,14 @@ export default function PropertyPage() {
                 aria-label="Request Disclosures"
               >
                 Request Disclosures
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenTourModal}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+                aria-label="Schedule a Tour"
+              >
+                Schedule a Tour
               </button>
               <button
                 type="button"
@@ -1104,7 +1104,7 @@ export default function PropertyPage() {
         </p>
       </main>
 
-      {/* Request a Tour modal */}
+      {/* Schedule a Tour modal */}
       {isTourModalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
@@ -1120,7 +1120,7 @@ export default function PropertyPage() {
           >
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
               <h2 id="tour-modal-title" className="text-lg font-semibold text-gray-900 dark:text-white">
-                Request a Tour
+                Schedule a Tour
               </h2>
               <button
                 type="button"
