@@ -244,7 +244,7 @@ async def populate_database_endpoint(
 async def get_properties(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
-    sort_by: str = Query("price_asc", description="Sort by: price_asc, price_desc, sqft_desc, lot_size_desc, beds_desc, baths_desc"),
+    sort_by: str = Query("price_desc", description="Sort by: price_asc, price_desc, sqft_desc, lot_size_desc, beds_desc, baths_desc"),
     address: Optional[str] = Query(None, description="Filter by address"),
     listing_id: Optional[str] = Query(None, description="Filter by listing ID"),
     city: Optional[str] = Query(None, description="Filter by city"),
@@ -320,7 +320,7 @@ async def get_properties(
         total = query.count()
         
         # Apply sorting - normalize the sort_by parameter
-        sort_by_normalized = sort_by.lower().strip() if sort_by else "price_asc"
+        sort_by_normalized = sort_by.lower().strip() if sort_by else "price_desc"
         
         if sort_by_normalized == "price_asc":
             query = query.order_by(nullslast(Property.list_price.asc()))
@@ -335,8 +335,8 @@ async def get_properties(
         elif sort_by_normalized == "baths_desc":
             query = query.order_by(nullslast(Property.bathrooms_total_integer.desc()))
         else:
-            # Default to price_asc if invalid sort_by
-            query = query.order_by(nullslast(Property.list_price.asc()))
+            # Default to price_desc if invalid sort_by
+            query = query.order_by(nullslast(Property.list_price.desc()))
         
         # Apply pagination
         offset = (page - 1) * page_size
