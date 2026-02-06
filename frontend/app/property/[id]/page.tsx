@@ -1099,9 +1099,14 @@ export default function PropertyPage() {
         </div>
 
         {/* MLS disclaimer */}
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-          Based on information submitted to the MLS GRID as of {formatDataUpdatedDate(property.lastPopulateRun)}. All data is obtained from various sources and may not have been verified by broker or MLS GRID. Supplied Open House Information is subject to change without notice. All information should be independently reviewed and verified for accuracy. Properties may or may not be listed by the office/agent presenting the information.
-        </p>
+        <div className="text-sm text-gray-500 dark:text-gray-400 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700 space-y-3">
+          <p>
+            Based on information submitted to the MLS GRID as of {formatDataUpdatedDate(property.lastPopulateRun)}. All data is obtained from various sources and may not have been verified by broker or MLS GRID. Supplied Open House Information is subject to change without notice. All information should be independently reviewed and verified for accuracy. Properties may or may not be listed by the office/agent presenting the information.
+          </p>
+          <p>
+            IDX information is provided exclusively for consumers&apos; personal noncommercial use, that it may not be used for any purpose other than to identify prospective properties consumers may be interested in purchasing, that the data is deemed reliable but is not guaranteed by MLS GRID, and that the use of the MLS GRID Data may be subject to an end user license agreement prescribed by the Member Participant&apos;s applicable MLS if any and as amended from time to time.
+          </p>
+        </div>
       </main>
 
       {/* Schedule a Tour modal */}
