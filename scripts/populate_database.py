@@ -353,13 +353,6 @@ def populate_database(
 
         total_elapsed = time.perf_counter() - start_time
         run_ended_at = datetime.now(_pacific).isoformat()
-        # Persist timestamp so backend can show "Data last updated" on property pages
-        _last_populate_path = os.path.join(_project_root, "backend", "last_populate_run.txt")
-        try:
-            with open(_last_populate_path, "w") as f:
-                f.write(run_ended_at)
-        except OSError as e:
-            print(f"  (Could not write last populate timestamp: {e})")
         print("\n" + "=" * 60)
         print("Database Population Complete!")
         print("=" * 60)
@@ -387,6 +380,13 @@ def populate_database(
         raise
     finally:
         session.close()
+        # Always update "Data last refreshed" on property pages, even when no properties were inserted/updated or on error
+        _last_populate_path = os.path.join(_project_root, "backend", "last_populate_run.txt")
+        try:
+            with open(_last_populate_path, "w") as f:
+                f.write(datetime.now(_pacific).isoformat())
+        except OSError as e:
+            print(f"  (Could not write last populate timestamp: {e})")
 
 
 if __name__ == "__main__":
