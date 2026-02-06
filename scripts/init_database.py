@@ -43,6 +43,7 @@ def main():
         print("\nTables created:")
         print("  - properties")
         print("  - property_media")
+        print("  - app_metadata")
         print("\nYou can now populate the database with:")
         print("  python3 scripts/populate_database.py")
         print("  python3 scripts/populate_database.py --limit 500  # optional cap")

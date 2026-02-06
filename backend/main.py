@@ -37,7 +37,7 @@ else:
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from database.models import get_engine, get_session, Property, PropertyMedia, init_database
+from database.models import get_engine, get_session, Property, PropertyMedia, AppMetadata, init_database
 from services.property_transformer import transform_for_frontend
 from scripts.populate_database import populate_database
 from services.r2_storage import R2Storage
@@ -50,8 +50,11 @@ CACHE_DURATION_HOURS = 24  # Cache images for 24 hours
 LAST_POPULATE_RUN_FILE = os.path.join(backend_dir, "last_populate_run.txt")
 
 
-def _read_last_populate_run() -> Optional[str]:
-    """Read the date/time of the last populate_database run from backend/last_populate_run.txt."""
+def _read_last_populate_run(db: Session) -> Optional[str]:
+    """Read the date/time of the last populate_database run from DB, then file fallback."""
+    row = db.query(AppMetadata).filter_by(key="last_populate_run").first()
+    if row and row.value:
+        return row.value.strip()
     try:
         if os.path.exists(LAST_POPULATE_RUN_FILE):
             with open(LAST_POPULATE_RUN_FILE) as f:
@@ -659,7 +662,7 @@ async def get_property_by_id(
         ).order_by(PropertyMedia.order).all()
         
         result = transform_for_frontend(property_obj, media_items)
-        result["lastPopulateRun"] = _read_last_populate_run()
+        result["lastPopulateRun"] = _read_last_populate_run(db)
         return result
     
     except HTTPException:

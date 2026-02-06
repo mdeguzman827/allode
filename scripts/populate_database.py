@@ -48,7 +48,7 @@ elif os.path.exists(root_env):
 else:
     load_dotenv()
 
-from database.models import init_database, get_session, Property, PropertyMedia
+from database.models import init_database, get_session, Property, PropertyMedia, AppMetadata
 from services.property_transformer import transform_property, transform_media
 
 def _migrate_batch_to_r2(property_ids: List[str], database_url: str) -> None:
@@ -380,13 +380,26 @@ def populate_database(
         raise
     finally:
         session.close()
-        # Always update "Data last refreshed" on property pages, even when no properties were inserted/updated or on error
+        # Always update "Data last refreshed" in DB (and file) so property pages show it, even when no properties were inserted/updated or on error
+        ts = datetime.now(_pacific).isoformat()
+        meta_session = get_session(engine)
+        try:
+            row = meta_session.query(AppMetadata).filter_by(key="last_populate_run").first()
+            if row:
+                row.value = ts
+            else:
+                meta_session.add(AppMetadata(key="last_populate_run", value=ts))
+            meta_session.commit()
+        except Exception as e:
+            print(f"  (Could not write last populate timestamp to DB: {e})")
+        finally:
+            meta_session.close()
         _last_populate_path = os.path.join(_project_root, "backend", "last_populate_run.txt")
         try:
             with open(_last_populate_path, "w") as f:
-                f.write(datetime.now(_pacific).isoformat())
+                f.write(ts)
         except OSError as e:
-            print(f"  (Could not write last populate timestamp: {e})")
+            print(f"  (Could not write last populate timestamp to file: {e})")
 
 
 if __name__ == "__main__":

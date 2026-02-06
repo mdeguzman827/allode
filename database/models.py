@@ -198,6 +198,14 @@ class PropertyMedia(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class AppMetadata(Base):
+    """Key-value store for app-level metadata (e.g. last populate run)."""
+    __tablename__ = 'app_metadata'
+
+    key = Column(String(64), primary_key=True)
+    value = Column(Text, nullable=False)
+
+
 # Recycle connections after 10 minutes so they don't outlive server idle timeout
 POOL_RECYCLE_SECONDS = 10 * 60  # 10 min
 
