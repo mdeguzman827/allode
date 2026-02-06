@@ -8,13 +8,13 @@ const FAQ_ITEMS = [
     id: 'what-is-flat-fee',
     question: 'What does the flat fee cover?',
     answer:
-      'The $4,995 flat fee covers full buyer representation: your licensed agent helps you search, make offers, negotiate, manage inspections and contingencies, and guide you to closing. You keep any commission offered by the seller minus our fee—no percentage of the sale price.',
+      'The $4,995 flat fee covers full buyer representation: we send disclosures, schedule tours, make offers, negotiate, manage inspections and contingencies, and guide you to closing. You keep any commission offered by the seller minus our flat fee. There are no hidden fees or surprises.',
   },
   {
     id: 'when-do-i-pay',
     question: 'When do I pay the $4,995?',
     answer:
-      'You pay Allode’s flat fee after closing, when the sale is complete. There’s no upfront cost to work with us.',
+      'The flat fee is taken out of the commission offered by the seller, which is paid by through the Title Company. Then we send you the rest of the commission as a check 7-10 days after closing.',
   },
   {
     id: 'full-representation',
@@ -26,40 +26,52 @@ const FAQ_ITEMS = [
     id: 'areas-served',
     question: 'What areas do you serve?',
     answer:
-      'We serve homebuyers in our service areas. Use our site to search listings and reach out via the Contact page to confirm we can represent you in your target area.',
+      'We currently serve homebuyers in the state of Washington.',
   },
   {
     id: 'selling-and-buying',
     question: 'Can I use Allode if I’m also selling a home?',
     answer:
-      'Allode focuses on representing buyers. If you’re selling and buying, contact us and we can discuss how we can help with your purchase.',
+      'Allode currently focuses on representing buyers. We will represent sellers in the future.',
   },
 ] as const
 
 const STEPS = [
   {
     number: 1,
-    title: 'Search for properties',
+    title: 'Sign our agency agreement',
     description:
-      'Use our site to search for homes by address, city, or neighborhood. Browse listings, view photos and details, and save the properties you like.',
+      'Sign an agreement with Allode to represent you. We’ll walk you through the entire process.',
   },
   {
     number: 2,
-    title: 'Connect with us',
+    title: 'Search for properties',
     description:
-      'Reach out through our Contact page or by phone. We’ll pair you with a licensed agent who will represent you as your buyer’s agent at no upfront cost.',
+      'Look for properties on any site (e.g. Redfin, Zillow, Allode, etc.). Browse listings, view photos and details, and save the properties you like.',
   },
   {
     number: 3,
-    title: 'Make an offer & negotiate',
+    title: 'Request disclosures',
     description:
-      'Your agent will help you make competitive offers, negotiate terms, and coordinate inspections and contingencies—the same full service you’d expect from a traditional brokerage.',
+      'Request and review disclosures from the seller. This will give you a better understanding of the property and its condition. Ask questions of the seller and their agent.',
   },
   {
     number: 4,
+    title: 'Go tour',
+    description:
+      'Open houses are recommended, but you can also schedule a tour with an agent.',
+  },
+  {
+    number: 5,
+    title: 'Make an offer',
+    description:
+      'Make an offer on the property. We will help you make a competitive offer and negotiate the terms of the offer.',
+  },
+  {
+    number: 6,
     title: 'Close & pay one flat fee',
     description:
-      'After closing, you pay Allode a flat fee of $4,995. You keep the rest of the commission offered by the seller. No percentage of the sale, no surprises.',
+      'After closing, you pay Allode a flat fee of $4,995. You keep the rest of the commission offered by the seller (usually 2.5-3% of the sale price).',
   },
 ] as const
 

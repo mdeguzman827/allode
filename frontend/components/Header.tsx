@@ -5,7 +5,7 @@ import Link from 'next/link'
 export default function Header() {
   return (
     <header className="p-6 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         <Link 
           href="/" 
           className="flex items-center gap-3 text-2xl font-normal text-gray-900 dark:text-gray-100 hover:opacity-80 transition-opacity"
