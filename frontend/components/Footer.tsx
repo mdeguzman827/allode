@@ -12,11 +12,18 @@ export default function Footer() {
           </p>
           <nav className="flex items-center gap-6" aria-label="Footer navigation">
             <Link
+              href="/about"
+              className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+              aria-label="About"
+            >
+              About
+            </Link>
+            <Link
               href="/terms"
               className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
-              aria-label="Terms of Use"
+              aria-label="Terms"
             >
-              Terms of Use
+              Terms
             </Link>
           </nav>
         </div>
