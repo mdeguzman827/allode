@@ -7,10 +7,10 @@ from datetime import datetime
 
 
 def _normalize_address(s: Optional[str]) -> str:
-    """Remove trailing spaces before commas (e.g. 'Avenue , Warden' -> 'Avenue, Warden')."""
+    """Remove trailing/leading spaces around commas (e.g. 'Avenue , Warden' -> 'Avenue, Warden')."""
     if not s:
         return ""
-    return re.sub(r"\s+,", ",", s.strip())
+    return re.sub(r"\s*,\s*", ", ", s.strip())
 
 
 def parse_date(date_str: Optional[str]) -> Optional[datetime]:
@@ -232,7 +232,7 @@ def transform_property(raw_property: Dict[str, Any]) -> Dict[str, Any]:
         "city": safe_convert(raw_property.get("City")),
         "state_or_province": safe_convert(raw_property.get("StateOrProvince")),
         "postal_code": safe_convert(raw_property.get("PostalCode")),
-        "unparsed_address": safe_convert(raw_property.get("UnparsedAddress")),
+        "unparsed_address": (_normalize_address(safe_convert(raw_property.get("UnparsedAddress"))) or None),
         "property_type": safe_convert(raw_property.get("PropertyType")),
         "property_sub_type": safe_convert(raw_property.get("PropertySubType")),
         "home_type": get_home_type_from_property(raw_property.get("PropertyType"), raw_property.get("PropertySubType")),

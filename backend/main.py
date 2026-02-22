@@ -38,7 +38,7 @@ else:
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database.models import get_engine, get_session, Property, PropertyMedia, AppMetadata, init_database
-from services.property_transformer import transform_for_frontend
+from services.property_transformer import transform_for_frontend, _normalize_address
 from scripts.populate_database import populate_database
 from services.r2_storage import R2Storage
 from services.image_processor import ImageProcessor
@@ -442,13 +442,14 @@ async def autocomplete(
             
             for unparsed_address, city, state, prop_id in address_prefix_query:
                 if unparsed_address:
+                    addr = _normalize_address(unparsed_address)
                     suggestions.append({
                         "type": "address",
-                        "value": unparsed_address,
+                        "value": addr,
                         "city": city or "",
                         "state": state or "",
                         "propertyId": prop_id,
-                        "display": unparsed_address,
+                        "display": addr,
                         "relevance": "prefix"
                     })
             
@@ -481,13 +482,14 @@ async def autocomplete(
                 
                 for unparsed_address, city, state, prop_id in address_contains_query:
                     if unparsed_address:
+                        addr = _normalize_address(unparsed_address)
                         suggestions.append({
                             "type": "address",
-                            "value": unparsed_address,
+                            "value": addr,
                             "city": city or "",
                             "state": state or "",
                             "propertyId": prop_id,
-                            "display": unparsed_address,
+                            "display": addr,
                             "relevance": "contains"
                         })
         
@@ -616,13 +618,14 @@ async def autocomplete(
             
             for unparsed_address, city, state, prop_id in address_query:
                 if unparsed_address:
+                    addr = _normalize_address(unparsed_address)
                     suggestions.append({
                         "type": "address",
-                        "value": unparsed_address,
+                        "value": addr,
                         "city": city or "",
                         "state": state or "",
                         "propertyId": prop_id,
-                        "display": unparsed_address,
+                        "display": addr,
                         "relevance": "prefix"
                     })
         
