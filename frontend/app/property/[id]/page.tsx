@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import PropertyImageCarousel from '@/components/PropertyImageCarousel'
+import { formatBathrooms } from '@/utils/formatBathrooms'
 
 const TOUR_MESSAGE_PREFIX = (address: string) =>
   `I would like to schedule a tour for ${address} at ...`
@@ -496,7 +497,7 @@ export default function PropertyPage() {
                 </div>
                 <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {property.propertyDetails.bathrooms != null ? Number(property.propertyDetails.bathrooms).toFixed(1) : '-'}
+                    {formatBathrooms(property.propertyDetails.bathrooms)}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Bathrooms</p>
                 </div>
@@ -657,7 +658,7 @@ export default function PropertyPage() {
                       {property.propertyDetails.bathrooms !== null && property.propertyDetails.bathrooms !== undefined && (
                         <div>
                           <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Bathrooms</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.bathrooms != null ? Number(property.propertyDetails.bathrooms).toFixed(1) : '-'}</dd>
+                          <dd className="text-gray-900 dark:text-white">{formatBathrooms(property.propertyDetails.bathrooms)}</dd>
                         </div>
                       )}
                       {property.propertyDetails.squareFeet !== null && property.propertyDetails.squareFeet !== undefined && (

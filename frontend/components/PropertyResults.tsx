@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useSearchParams, usePathname } from 'next/navigation'
+import { formatBathrooms } from '@/utils/formatBathrooms'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -288,7 +289,7 @@ export default function PropertyResults({
                     {property.propertyDetails.bedrooms ?? 0} {property.propertyDetails.bedrooms === 1 ? 'bed' : 'beds'}
                   </span>
                   <span>
-                    {property.propertyDetails.bathrooms != null ? Number(property.propertyDetails.bathrooms).toFixed(1) : '0'} {property.propertyDetails.bathrooms === 1 ? 'bath' : 'baths'}
+                    {formatBathrooms(property.propertyDetails.bathrooms, '0')} {property.propertyDetails.bathrooms === 1 ? 'bath' : 'baths'}
                   </span>
                   {property.propertyDetails.squareFeet != null && (
                     <span>{property.propertyDetails.squareFeet.toLocaleString()} sq ft</span>
