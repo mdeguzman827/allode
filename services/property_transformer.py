@@ -183,14 +183,14 @@ def safe_convert(value):
 
 
 def _to_bathroom_float(value: Any) -> Optional[float]:
-    """Convert bathroom value (int, float, or string like '1.75') to float with 1 decimal place."""
+    """Pass through bathroom value as float (no rounding). Handles int, float, or string from API."""
     if value is None:
         return None
     try:
         if isinstance(value, (int, float)):
-            return round(float(value), 1)
+            return float(value)
         if isinstance(value, str):
-            return round(float(value), 1)
+            return float(value)
     except (ValueError, TypeError):
         pass
     return None
@@ -237,9 +237,7 @@ def transform_property(raw_property: Dict[str, Any]) -> Dict[str, Any]:
         "property_sub_type": safe_convert(raw_property.get("PropertySubType")),
         "home_type": get_home_type_from_property(raw_property.get("PropertyType"), raw_property.get("PropertySubType")),
         "bedrooms_total": raw_property.get("BedroomsTotal"),
-        "bathrooms_total_integer": _to_bathroom_float(
-            raw_property.get("NWM_Bathrooms") or raw_property.get("BathroomsTotalInteger")
-        ),
+        "bathrooms_total_integer": _to_bathroom_float(raw_property.get("NWM_Bathrooms")),
         "bathrooms_full": raw_property.get("BathroomsFull"),
         "bathrooms_half": raw_property.get("BathroomsHalf"),
         "living_area": raw_property.get("NWM_CalculatedSquareFootage") or raw_property.get("LivingArea"),
