@@ -151,11 +151,13 @@ def populate_database(
     database_url: str = None,
     limit: int | None = None,
     refresh: bool = False,
+    refresh_only: bool = False,
     batch_size: int = API_BATCH_SIZE,
     skip_r2: bool = False,
 ):
     """Populate database with properties. No limit applied when limit is None.
     When refresh=True, existing properties are updated (primary_image_url, media, and other API fields).
+    When refresh_only=True (implies refresh), only update existing records—never insert new ones.
     When skip_r2=True, images are not uploaded to R2 (database and API data only).
     """
     database_url = get_database_url(database_url)
@@ -165,7 +167,10 @@ def populate_database(
     print("=" * 60)
     print("Populating Database with Properties")
     print(f"Run started: {run_started_at}")
-    if refresh:
+    if refresh_only:
+        refresh = True
+        print("Mode: REFRESH ONLY (update existing properties only, no new inserts)")
+    elif refresh:
         print("Mode: REFRESH (update existing properties with fresh API data)")
     if skip_r2:
         print("Mode: SKIP R2 (images will not be uploaded to R2)")
@@ -218,11 +223,25 @@ def populate_database(
                         break
                     continue
 
+            # Refresh-only: only process properties that already exist in DB (never insert new)
+            if refresh_only:
+                orig_len = len(to_process)
+                to_process = [p for p in to_process if _id_from_raw(p) in existing_ids]
+                skipped_count += orig_len - len(to_process)
+                if not to_process:
+                    print(f"  Fetched {len(page_properties)} properties; none in this batch exist in DB, skipping.")
+                    if not next_url:
+                        break
+                    if limit is not None and total_inserted >= limit:
+                        break
+                    continue
+
             print(f"  Fetched {len(page_properties)} properties; processing {len(to_process)} (total so far: {total_inserted})")
             batch_ids: List[str] = []
 
             if refresh:
                 # Refresh path: update existing or insert; per-row existing check required; retry transform/insert up to MAX_INSERT_RETRIES
+                # When refresh_only is True, to_process already filtered to existing_ids only, so we never insert
                 for idx, raw_prop in enumerate(to_process, 1):
                     last_error: Optional[Exception] = None
                     for attempt in range(1, MAX_INSERT_RETRIES + 1):
@@ -239,7 +258,7 @@ def populate_database(
                                 batch_ids.append(property_data["id"])
                                 if updated_count <= 5 or updated_count % 50 == 0:
                                     print(f"  [{idx}/{len(to_process)}] Refreshed {property_data['id']}")
-                            else:
+                            elif not refresh_only:
                                 property_obj = Property(**property_data)
                                 session.add(property_obj)
                                 for media_data in transform_media(raw_prop):
@@ -414,6 +433,11 @@ if __name__ == "__main__":
         help="Refresh existing properties: update primary_image_url, media URLs, and other API fields (for re-running migrate_images_to_r2 with fresh signed URLs)",
     )
     parser.add_argument(
+        "--refresh-only",
+        action="store_true",
+        help="Only update existing records (no new inserts). Implies --refresh.",
+    )
+    parser.add_argument(
         "--batch-size",
         type=int,
         default=API_BATCH_SIZE,
@@ -432,6 +456,7 @@ if __name__ == "__main__":
         database_url=database_url,
         limit=args.limit,
         refresh=args.refresh,
+        refresh_only=args.refresh_only,
         batch_size=args.batch_size,
         skip_r2=args.no_r2,
     )

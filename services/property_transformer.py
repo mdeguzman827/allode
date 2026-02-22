@@ -1,8 +1,16 @@
 """
 Transform NWMLS API data to normalized format
 """
+import re
 from typing import Dict, Any, Optional, List
 from datetime import datetime
+
+
+def _normalize_address(s: Optional[str]) -> str:
+    """Remove trailing spaces before commas (e.g. 'Avenue , Warden' -> 'Avenue, Warden')."""
+    if not s:
+        return ""
+    return re.sub(r"\s+,", ",", s.strip())
 
 
 def parse_date(date_str: Optional[str]) -> Optional[datetime]:
@@ -174,6 +182,20 @@ def safe_convert(value):
     return value
 
 
+def _to_bathroom_integer(value: Any) -> Optional[int]:
+    """Convert bathroom value (int, float, or string like '1.75') to integer for bathrooms_total_integer column."""
+    if value is None:
+        return None
+    try:
+        if isinstance(value, (int, float)):
+            return round(value)
+        if isinstance(value, str):
+            return round(float(value))
+    except (ValueError, TypeError):
+        pass
+    return None
+
+
 def transform_property(raw_property: Dict[str, Any]) -> Dict[str, Any]:
     """
     Transform NWMLS API property data to normalized database format
@@ -215,10 +237,12 @@ def transform_property(raw_property: Dict[str, Any]) -> Dict[str, Any]:
         "property_sub_type": safe_convert(raw_property.get("PropertySubType")),
         "home_type": get_home_type_from_property(raw_property.get("PropertyType"), raw_property.get("PropertySubType")),
         "bedrooms_total": raw_property.get("BedroomsTotal"),
-        "bathrooms_total_integer": raw_property.get("BathroomsTotalInteger"),
+        "bathrooms_total_integer": _to_bathroom_integer(
+            raw_property.get("NWM_Bathrooms") or raw_property.get("BathroomsTotalInteger")
+        ),
         "bathrooms_full": raw_property.get("BathroomsFull"),
         "bathrooms_half": raw_property.get("BathroomsHalf"),
-        "living_area": raw_property.get("LivingArea"),
+        "living_area": raw_property.get("NWM_CalculatedSquareFootage") or raw_property.get("LivingArea"),
         "lot_size_square_feet": raw_property.get("LotSizeSquareFeet"),
         "year_built": raw_property.get("YearBuilt"),
         "standard_status": safe_convert(raw_property.get("StandardStatus")),
@@ -446,10 +470,13 @@ def transform_for_frontend(property_obj, media_items: Optional[List] = None) -> 
         "price": property_obj.list_price,
         "address": {
             "street": f"{property_obj.street_number or ''} {property_obj.street_name or ''}".strip(),
-            "city": property_obj.city,
+            "city": (property_obj.city or "").strip() if property_obj.city else "",
             "state": property_obj.state_or_province,
             "zipCode": property_obj.postal_code,
-            "full": property_obj.unparsed_address or f"{property_obj.street_number} {property_obj.street_name}, {property_obj.city}, {property_obj.state_or_province} {property_obj.postal_code}".strip()
+            "full": _normalize_address(
+                property_obj.unparsed_address
+                or f"{property_obj.street_number or ''} {property_obj.street_name or ''}, {property_obj.city or ''}, {property_obj.state_or_province or ''} {property_obj.postal_code or ''}".strip()
+            ),
         },
         "propertyDetails": {
             "type": property_obj.property_type,
