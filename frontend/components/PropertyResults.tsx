@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { useSearchParams, usePathname } from 'next/navigation'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -118,6 +119,13 @@ export default function PropertyResults({
   sortBy,
   onSortChange,
 }: PropertyResultsProps) {
+  const searchParams = useSearchParams()
+  const pathname = usePathname()
+  const resultsUrl = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '')
+
+  const getPropertyHref = (propertyId: string) =>
+    `/property/${propertyId}${resultsUrl ? `?returnTo=${encodeURIComponent(resultsUrl)}` : ''}`
+
   if (isLoading) {
     return (
       <div className="mt-12 text-center">
@@ -198,9 +206,7 @@ export default function PropertyResults({
           return (
           <Link
             key={property.id}
-            href={`/property/${property.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
+            href={getPropertyHref(property.id)}
             className="block border border-gray-200 dark:border-gray-800 rounded-lg p-6 hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-700 transition-all bg-white dark:bg-gray-900 cursor-pointer"
             aria-label={`View details for ${property.address.full}`}
           >

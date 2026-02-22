@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import PropertyImageCarousel from '@/components/PropertyImageCarousel'
 
@@ -132,6 +132,9 @@ interface Property {
 
 export default function PropertyPage() {
   const params = useParams()
+  const searchParams = useSearchParams()
+  const rawReturnTo = searchParams.get('returnTo')
+  const returnTo = rawReturnTo?.startsWith('/results') ? rawReturnTo : '/results'
   const [property, setProperty] = useState<Property | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -320,7 +323,7 @@ export default function PropertyPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-[#ffffff] flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     )
@@ -328,7 +331,7 @@ export default function PropertyPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center gap-4">
+      <div className="min-h-screen bg-[#ffffff] flex flex-col items-center justify-center gap-4">
         <p className="text-red-500 text-lg">{error}</p>
         <Link
           href="/"
@@ -342,7 +345,7 @@ export default function PropertyPage() {
 
   if (!property) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center gap-4">
+      <div className="min-h-screen bg-[#ffffff] flex flex-col items-center justify-center gap-4">
         <p className="text-gray-600 dark:text-gray-400 text-lg">Property not found</p>
         <Link
           href="/"
@@ -384,7 +387,21 @@ export default function PropertyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-[#ffffff]">
+      {/* Back to Results */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+        <Link
+          href={returnTo}
+          className="inline-flex items-center gap-2 py-1 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+          aria-label="Back to results"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to Results
+        </Link>
+      </div>
+
       {/* Image Gallery - Full Width */}
       {property.images && property.images.length > 0 && (
         <div className="relative w-full">
