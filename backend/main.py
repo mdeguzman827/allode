@@ -1,6 +1,7 @@
 """
 FastAPI backend for property search API
 """
+import re
 from fastapi import FastAPI, Query, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
@@ -379,14 +380,17 @@ async def autocomplete(
         if not q_trimmed:
             return {"suggestions": []}
         
+        # Normalize query (remove trailing spaces around commas) so "500 Road , City, WA 98831" matches stored "500 Road, City, WA 98831"
+        q_normalized = _normalize_address(q_trimmed) or q_trimmed
+        
         # Detect query type: starts with number = address/zip, starts with letter = city
         query_starts_with_number = q_trimmed[0].isdigit()
         
         suggestions = []
         
         # Use prefix matching for better relevance (starts with, not contains)
-        prefix_term = f"{q_trimmed}%"
-        contains_term = f"%{q_trimmed}%"
+        prefix_term = f"{q_normalized}%"
+        contains_term = f"%{q_normalized}%"
         
         if query_starts_with_number:
             # Check if it looks like a zip code (all digits, 5 or fewer chars)
@@ -492,6 +496,39 @@ async def autocomplete(
                             "display": addr,
                             "relevance": "contains"
                         })
+            
+            # When query looks like full address but no matches yet, try regex match allowing flexible comma spacing
+            # Handles stored "500 Road , City, WA 98831" when user types "500 Road, City, WA 98831"
+            address_count = sum(1 for s in suggestions if s.get("type") == "address")
+            if address_count == 0 and "," in q_normalized and len(q_normalized) > 15:
+                parts = [re.escape(p.strip()) for p in q_normalized.split(",") if p.strip()]
+                if len(parts) >= 2:
+                    regex_pattern = r"^\s*" + r"\s*,\s*".join(parts) + r"\s*$"
+                    exact_match_query = db.query(
+                        Property.unparsed_address,
+                        Property.city,
+                        Property.state_or_province,
+                        Property.id
+                    ).filter(
+                        and_(
+                            Property.unparsed_address.op("~*")(regex_pattern),
+                            Property.street_number.isnot(None),
+                            Property.city.isnot(None)
+                        )
+                    ).limit(1).all()
+                    for unparsed_address, city, state, prop_id in exact_match_query:
+                        if unparsed_address:
+                            addr = _normalize_address(unparsed_address)
+                            suggestions.insert(0, {
+                                "type": "address",
+                                "value": addr,
+                                "city": city or "",
+                                "state": state or "",
+                                "propertyId": prop_id,
+                                "display": addr,
+                                "relevance": "prefix"
+                            })
+                            break
         
         else:
             # Prioritize states - get prefix/contains matches (e.g. "Wa" or "WA" → Washington)

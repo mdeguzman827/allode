@@ -389,18 +389,20 @@ export default function PropertyPage() {
 
   return (
     <div className="min-h-screen bg-[#ffffff]">
-      {/* Back to Results */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-        <Link
-          href={returnTo}
-          className="inline-flex items-center gap-2 py-1 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
-          aria-label="Back to results"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Results
-        </Link>
+      {/* Back to Results - Sticky */}
+      <div className="sticky top-0 z-10 bg-[#ffffff] dark:bg-gray-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+          <Link
+            href={returnTo}
+            className="inline-flex items-center gap-2 py-1 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+            aria-label="Back to results"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Results
+          </Link>
+        </div>
       </div>
 
       {/* Image Gallery - Full Width */}
