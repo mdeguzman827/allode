@@ -182,15 +182,15 @@ def safe_convert(value):
     return value
 
 
-def _to_bathroom_integer(value: Any) -> Optional[int]:
-    """Convert bathroom value (int, float, or string like '1.75') to integer for bathrooms_total_integer column."""
+def _to_bathroom_float(value: Any) -> Optional[float]:
+    """Convert bathroom value (int, float, or string like '1.75') to float with 1 decimal place."""
     if value is None:
         return None
     try:
         if isinstance(value, (int, float)):
-            return round(value)
+            return round(float(value), 1)
         if isinstance(value, str):
-            return round(float(value))
+            return round(float(value), 1)
     except (ValueError, TypeError):
         pass
     return None
@@ -237,7 +237,7 @@ def transform_property(raw_property: Dict[str, Any]) -> Dict[str, Any]:
         "property_sub_type": safe_convert(raw_property.get("PropertySubType")),
         "home_type": get_home_type_from_property(raw_property.get("PropertyType"), raw_property.get("PropertySubType")),
         "bedrooms_total": raw_property.get("BedroomsTotal"),
-        "bathrooms_total_integer": _to_bathroom_integer(
+        "bathrooms_total_integer": _to_bathroom_float(
             raw_property.get("NWM_Bathrooms") or raw_property.get("BathroomsTotalInteger")
         ),
         "bathrooms_full": raw_property.get("BathroomsFull"),
