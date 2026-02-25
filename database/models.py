@@ -114,6 +114,7 @@ class Property(Base):
     on_market_date = Column(DateTime)
     original_list_price = Column(Integer)
     parcel_number = Column(String)
+    association_fee = Column(Float)
     parking_features = Column(Text)
     parking_total = Column(Integer)
     possession = Column(String)

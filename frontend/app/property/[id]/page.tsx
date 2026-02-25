@@ -77,6 +77,7 @@ interface Property {
     onMarketDate?: string | null
     originalListPrice?: number | null
     parcelNumber?: string | null
+    associationFee?: number | null
     parkingFeatures?: string | null
     parkingTotal?: number | null
     possession?: string | null
@@ -1015,6 +1016,12 @@ export default function PropertyPage() {
                         <div>
                           <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Tax Year</dt>
                           <dd className="text-gray-900 dark:text-white">{property.propertyDetails.taxYear}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.associationFee !== null && property.propertyDetails.associationFee !== undefined && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Association Fee</dt>
+                          <dd className="text-gray-900 dark:text-white">${property.propertyDetails.associationFee.toLocaleString()}</dd>
                         </div>
                       )}
                       </dl>
