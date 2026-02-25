@@ -78,6 +78,20 @@ interface Property {
     originalListPrice?: number | null
     parcelNumber?: string | null
     associationFee?: number | null
+    associationYN?: boolean | null
+    buyerBrokerageCompensation?: string | null
+    buyerBrokerageCompensationType?: string | null
+    coolingYN?: boolean | null
+    cooling?: string | null
+    heatingYN?: boolean | null
+    heating?: string | null
+    cumulativeDaysOnMarket?: number | null
+    internetAddressDisplayYN?: boolean | null
+    internetEntireListingDisplayYN?: boolean | null
+    internetAutomatedValuationDisplayYN?: boolean | null
+    originatingSystemModificationTimestamp?: string | null
+    statusChangeTimestamp?: string | null
+    modificationTimestamp?: string | null
     parkingFeatures?: string | null
     parkingTotal?: number | null
     possession?: string | null
@@ -1022,6 +1036,150 @@ export default function PropertyPage() {
                         <div>
                           <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Association Fee</dt>
                           <dd className="text-gray-900 dark:text-white">${property.propertyDetails.associationFee.toLocaleString()}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.associationYN !== null && property.propertyDetails.associationYN !== undefined && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Association</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.associationYN ? 'Yes' : 'No'}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.buyerBrokerageCompensation && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Buyer Brokerage Compensation</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.buyerBrokerageCompensation}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.buyerBrokerageCompensationType && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Buyer Brokerage Compensation Type</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.buyerBrokerageCompensationType}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.coolingYN !== null && property.propertyDetails.coolingYN !== undefined && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Cooling</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.coolingYN ? 'Yes' : 'No'}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.cooling && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Cooling Type</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.cooling}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.heatingYN !== null && property.propertyDetails.heatingYN !== undefined && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Heating</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.heatingYN ? 'Yes' : 'No'}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.heating && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Heating Type</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.heating}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.cumulativeDaysOnMarket !== null && property.propertyDetails.cumulativeDaysOnMarket !== undefined && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Cumulative Days On Market</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.cumulativeDaysOnMarket}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.internetAddressDisplayYN !== null && property.propertyDetails.internetAddressDisplayYN !== undefined && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Internet Address Display</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.internetAddressDisplayYN ? 'Yes' : 'No'}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.internetEntireListingDisplayYN !== null && property.propertyDetails.internetEntireListingDisplayYN !== undefined && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Internet Entire Listing Display</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.internetEntireListingDisplayYN ? 'Yes' : 'No'}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.internetAutomatedValuationDisplayYN !== null && property.propertyDetails.internetAutomatedValuationDisplayYN !== undefined && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Internet Automated Valuation Display</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.internetAutomatedValuationDisplayYN ? 'Yes' : 'No'}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.levels && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Levels</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.levels}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.listOfficePhone && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">List Office Phone</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.listOfficePhone}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.listContractDate && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">List Contract Date</dt>
+                          <dd className="text-gray-900 dark:text-white">{new Date(property.propertyDetails.listContractDate).toLocaleDateString()}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.listingTerms && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Listing Terms</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.listingTerms}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.originatingSystemModificationTimestamp && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Originating System Modification Timestamp</dt>
+                          <dd className="text-gray-900 dark:text-white">{new Date(property.propertyDetails.originatingSystemModificationTimestamp).toLocaleString()}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.newConstructionYN !== null && property.propertyDetails.newConstructionYN !== undefined && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">New Construction</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.newConstructionYN ? 'Yes' : 'No'}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.nwmOffers && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">NWM Offers</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.nwmOffers}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.nwmOffersReviewDate && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">NWM Offers Review Date</dt>
+                          <dd className="text-gray-900 dark:text-white">{new Date(property.propertyDetails.nwmOffersReviewDate).toLocaleDateString()}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.onMarketDate && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">On Market Date</dt>
+                          <dd className="text-gray-900 dark:text-white">{new Date(property.propertyDetails.onMarketDate).toLocaleDateString()}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.nwmPreliminaryTitleOrdered && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">NWM Preliminary Title Ordered</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.nwmPreliminaryTitleOrdered}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.nwmSellerDisclosure && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">NWM Seller Disclosure</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.nwmSellerDisclosure}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.statusChangeTimestamp && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Status Change Timestamp</dt>
+                          <dd className="text-gray-900 dark:text-white">{new Date(property.propertyDetails.statusChangeTimestamp).toLocaleString()}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.modificationTimestamp && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Modification Timestamp</dt>
+                          <dd className="text-gray-900 dark:text-white">{new Date(property.propertyDetails.modificationTimestamp).toLocaleString()}</dd>
                         </div>
                       )}
                       </dl>
