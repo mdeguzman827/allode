@@ -560,6 +560,17 @@ export default function PropertyPage() {
                   <p className="text-sm text-gray-500 dark:text-gray-400">Price/sq ft</p>
                 </div>
               </div>
+              {(() => {
+                const daysOnMarket = property.propertyDetails.cumulativeDaysOnMarket ?? property.propertyDetails.cumulateDaysOnMarket
+                return daysOnMarket !== null && daysOnMarket !== undefined ? (
+                  <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <p className="text-gray-900 dark:text-white">
+                      <span className="font-bold">{daysOnMarket}</span>
+                      <span className="text-gray-600 dark:text-gray-300"> days on market</span>
+                    </p>
+                  </div>
+                ) : null
+              })()}
             </div>
 
             {/* Description */}
