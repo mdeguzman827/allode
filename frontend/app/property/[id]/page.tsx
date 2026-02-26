@@ -161,6 +161,7 @@ export default function PropertyPage() {
     utilities: false,
     publicFacts: false,
     location: false,
+    listingInformation: false,
   })
   const [isTourModalOpen, setIsTourModalOpen] = useState(false)
   const [tourMessage, setTourMessage] = useState('')
@@ -295,6 +296,7 @@ export default function PropertyPage() {
       utilities: !allExpanded,
       publicFacts: !allExpanded,
       location: !allExpanded,
+      listingInformation: !allExpanded,
     })
   }
 
@@ -582,7 +584,7 @@ export default function PropertyPage() {
                 const formatReviewDate = (d: string) =>
                   new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
                 return (
-                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                     <p className="text-gray-900 dark:text-white m-0">
                       {hasDays && (
                         <>
@@ -684,6 +686,162 @@ export default function PropertyPage() {
                 </button>
               </div>
               <div className="space-y-4">
+                {/* Listing Information Section */}
+                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => handleToggleSection('listingInformation')}
+                    className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                    aria-label="Toggle Listing Information section"
+                    aria-expanded={expandedSections.listingInformation}
+                  >
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Listing Information
+                    </h3>
+                    <svg
+                      className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${expandedSections.listingInformation ? 'transform rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {expandedSections.listingInformation && (
+                    <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <dl className="space-y-4">
+                      {property.propertyDetails.listingAgentFullName && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Listing Agent Name</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.listingAgentFullName}</dd>
+                        </div>
+                      )}
+                          {property.propertyDetails.listOfficeName && (
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Listing Office Name</dt>
+                              <dd className="text-gray-900 dark:text-white">{property.propertyDetails.listOfficeName}</dd>
+                            </div>
+                          )}
+                          {property.propertyDetails.listOfficePhone && (
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">List Office Phone</dt>
+                              <dd className="text-gray-900 dark:text-white">{property.propertyDetails.listOfficePhone}</dd>
+                            </div>
+                          )}
+                          {property.propertyDetails.onMarketDate && (
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">On Market Date</dt>
+                              <dd className="text-gray-900 dark:text-white">{new Date(property.propertyDetails.onMarketDate).toLocaleDateString()}</dd>
+                            </div>
+                          )}
+                          {property.propertyDetails.buyerBrokerageCompensation && (
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Buyer Brokerage Compensation</dt>
+                              <dd className="text-gray-900 dark:text-white">{property.propertyDetails.buyerBrokerageCompensation}</dd>
+                            </div>
+                          )}
+                          {property.propertyDetails.buyerBrokerageCompensationType && (
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Buyer Brokerage Compensation Type</dt>
+                              <dd className="text-gray-900 dark:text-white">{property.propertyDetails.buyerBrokerageCompensationType}</dd>
+                            </div>
+                          )}
+                          {property.propertyDetails.listingTerms && (
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Listing Terms</dt>
+                              <dd className="text-gray-900 dark:text-white">{property.propertyDetails.listingTerms}</dd>
+                            </div>
+                          )}
+                          {property.propertyDetails.nwmOffers && (
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">NWM Offers</dt>
+                              <dd className="text-gray-900 dark:text-white">{property.propertyDetails.nwmOffers}</dd>
+                            </div>
+                          )}
+                      {property.propertyDetails.nwmOffersReviewDate && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">NWM Offers Review Date</dt>
+                          <dd className="text-gray-900 dark:text-white">{new Date(property.propertyDetails.nwmOffersReviewDate).toLocaleDateString()}</dd>
+                        </div>
+                      )}
+                      </dl>
+                    </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Parking Section */}
+                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => handleToggleSection('parking')}
+                    className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                    aria-label="Toggle Parking section"
+                    aria-expanded={expandedSections.parking}
+                  >
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Parking
+                    </h3>
+                    <svg
+                      className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${expandedSections.parking ? 'transform rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {expandedSections.parking && (
+                    <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <dl className="space-y-4">
+                      {property.propertyDetails.parkingTotal !== null && property.propertyDetails.parkingTotal !== undefined && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Parking Total</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.parkingTotal}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.attachedGarageYN !== null && property.propertyDetails.attachedGarageYN !== undefined && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Attached Garage</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.attachedGarageYN ? 'Yes' : 'No'}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.coveredSpaces !== null && property.propertyDetails.coveredSpaces !== undefined && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Covered Spaces</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.coveredSpaces}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.garageSpaces !== null && property.propertyDetails.garageSpaces !== undefined && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Garage Spaces</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.garageSpaces}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.garageYN !== null && property.propertyDetails.garageYN !== undefined && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Garage</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.garageYN ? 'Yes' : 'No'}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.carportYN !== null && property.propertyDetails.carportYN !== undefined && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Carport</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.carportYN ? 'Yes' : 'No'}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.securityFeatures && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Security Features</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.securityFeatures}</dd>
+                        </div>
+                      )}
+                      </dl>
+                    </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Interior Section */}
                 <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                   <button
@@ -888,78 +1046,6 @@ export default function PropertyPage() {
                   )}
                 </div>
 
-                {/* Parking Section */}
-                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                  <button
-                    onClick={() => handleToggleSection('parking')}
-                    className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                    aria-label="Toggle Parking section"
-                    aria-expanded={expandedSections.parking}
-                  >
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Parking
-                    </h3>
-                    <svg
-                      className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${expandedSections.parking ? 'transform rotate-180' : ''}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  {expandedSections.parking && (
-                    <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <dl className="space-y-4">
-                      {property.propertyDetails.parkingTotal !== null && property.propertyDetails.parkingTotal !== undefined && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Parking Total</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.parkingTotal}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.attachedGarageYN !== null && property.propertyDetails.attachedGarageYN !== undefined && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Attached Garage</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.attachedGarageYN ? 'Yes' : 'No'}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.coveredSpaces !== null && property.propertyDetails.coveredSpaces !== undefined && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Covered Spaces</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.coveredSpaces}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.garageSpaces !== null && property.propertyDetails.garageSpaces !== undefined && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Garage Spaces</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.garageSpaces}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.garageYN !== null && property.propertyDetails.garageYN !== undefined && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Garage</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.garageYN ? 'Yes' : 'No'}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.carportYN !== null && property.propertyDetails.carportYN !== undefined && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Carport</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.carportYN ? 'Yes' : 'No'}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.securityFeatures && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Security Features</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.securityFeatures}</dd>
-                        </div>
-                      )}
-                      </dl>
-                    </div>
-                    </div>
-                  )}
-                </div>
-
                 {/* Utilities Section */}
                 <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                   <button
@@ -1056,6 +1142,66 @@ export default function PropertyPage() {
                   )}
                 </div>
 
+                {/* Location Section */}
+                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => handleToggleSection('location')}
+                    className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                    aria-label="Toggle Location section"
+                    aria-expanded={expandedSections.location}
+                  >
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Location
+                    </h3>
+                    <svg
+                      className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${expandedSections.location ? 'transform rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {expandedSections.location && (
+                    <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <dl className="space-y-4">
+                      {property.propertyDetails.elementarySchool && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Elementary School</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.elementarySchool}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.highSchool && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">High School</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.highSchool}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.highSchoolDistrict && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">High School District</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.highSchoolDistrict}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.subdivisionName && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Subdivision Name</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.subdivisionName}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.nwmZoningJurisdiction && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">NWM Zoning Jurisdiction</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.nwmZoningJurisdiction}</dd>
+                        </div>
+                      )}
+                      </dl>
+                    </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Public Facts Section */}
                 <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                   <button
@@ -1110,112 +1256,16 @@ export default function PropertyPage() {
                           <dd className="text-gray-900 dark:text-white">{property.propertyDetails.associationYN ? 'Yes' : 'No'}</dd>
                         </div>
                       )}
-                      {property.propertyDetails.buyerBrokerageCompensation && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Buyer Brokerage Compensation</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.buyerBrokerageCompensation}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.buyerBrokerageCompensationType && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Buyer Brokerage Compensation Type</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.buyerBrokerageCompensationType}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.levels && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Levels</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.levels}</dd>
-                        </div>
-                      )}
                       {property.propertyDetails.listContractDate && (
                         <div>
                           <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">List Contract Date</dt>
                           <dd className="text-gray-900 dark:text-white">{new Date(property.propertyDetails.listContractDate).toLocaleDateString()}</dd>
                         </div>
                       )}
-                      {property.propertyDetails.listingTerms && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Listing Terms</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.listingTerms}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.newConstructionYN !== null && property.propertyDetails.newConstructionYN !== undefined && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">New Construction</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.newConstructionYN ? 'Yes' : 'No'}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.nwmOffers && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">NWM Offers</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.nwmOffers}</dd>
-                        </div>
-                      )}
                       {property.propertyDetails.nwmOffersReviewDate && (
                         <div>
                           <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">NWM Offers Review Date</dt>
                           <dd className="text-gray-900 dark:text-white">{new Date(property.propertyDetails.nwmOffersReviewDate).toLocaleDateString()}</dd>
-                        </div>
-                      )}
-                      </dl>
-                    </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Location Section */}
-                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                  <button
-                    onClick={() => handleToggleSection('location')}
-                    className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                    aria-label="Toggle Location section"
-                    aria-expanded={expandedSections.location}
-                  >
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Location
-                    </h3>
-                    <svg
-                      className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${expandedSections.location ? 'transform rotate-180' : ''}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  {expandedSections.location && (
-                    <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <dl className="space-y-4">
-                      {property.propertyDetails.elementarySchool && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Elementary School</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.elementarySchool}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.highSchool && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">High School</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.highSchool}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.highSchoolDistrict && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">High School District</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.highSchoolDistrict}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.subdivisionName && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Subdivision Name</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.subdivisionName}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.nwmZoningJurisdiction && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">NWM Zoning Jurisdiction</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.nwmZoningJurisdiction}</dd>
                         </div>
                       )}
                       </dl>
