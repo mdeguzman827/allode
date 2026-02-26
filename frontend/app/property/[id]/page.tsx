@@ -585,22 +585,18 @@ export default function PropertyPage() {
                   new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
                 return (
                   <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                    <p className="text-gray-900 dark:text-white m-0">
-                      {hasDays && (
-                        <>
-                          <span className="font-bold">{daysOnMarket}</span>
-                          <span className="text-gray-600 dark:text-gray-300"> days on market</span>
-                        </>
-                      )}
-                      {hasDays && hasReviewDate && (
-                        <span className="text-gray-600 dark:text-gray-300">, </span>
-                      )}
-                      {hasReviewDate && (
-                        <span className="text-gray-600 dark:text-gray-300">
-                          Review Date: {formatReviewDate(reviewDate)}
-                        </span>
-                      )}
-                    </p>
+                    {hasDays && (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-gray-500 dark:text-gray-400">Days on Market</span>
+                        <span className="text-gray-900 dark:text-white font-bold">{daysOnMarket} days</span>
+                      </div>
+                    )}
+                    {hasReviewDate && (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-gray-500 dark:text-gray-400">Review Date</span>
+                        <span className="text-gray-900 dark:text-white">{formatReviewDate(reviewDate)}</span>
+                      </div>
+                    )}
                   </div>
                 )
               })()}
