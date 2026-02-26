@@ -49,7 +49,7 @@ const fetchProperties = async (
   state?: string,
   zipcode?: string,
   page: number = 1,
-  sortBy: string = 'price_desc',
+  sortBy: string = 'newest',
   filters?: {
     status?: string[] | null
     minPrice?: number | null
@@ -120,7 +120,7 @@ export default function ResultsPage() {
   const state = searchParams.get('state') || ''
   const zipcode = searchParams.get('zipcode') || ''
   const page = parseInt(searchParams.get('page') || '1', 10)
-  const sortBy = searchParams.get('sort_by') || 'price_desc'
+  const sortBy = searchParams.get('sort_by') || 'newest'
   
   // Filter params
   const statusFilterParam = searchParams.get('status') || ''

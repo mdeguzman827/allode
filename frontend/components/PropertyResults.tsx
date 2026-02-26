@@ -27,6 +27,7 @@ interface Property {
     squareFeet: number
     status: string
     mlsStatus?: string
+    onMarketDate?: string | null
   }
   images: Array<{ url: string }>
   description?: string
@@ -186,6 +187,7 @@ export default function PropertyResults({
             className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             aria-label="Sort properties"
           >
+            <option value="newest">Newest</option>
             <option value="price_asc">Price: Low to High</option>
             <option value="price_desc">Price: High to Low</option>
             <option value="sqft_desc">Square Feet</option>
@@ -303,8 +305,8 @@ export default function PropertyResults({
                   </p>
                 )}
 
-                <div className="mt-4">
-                  <span className="text-xs text-gray-500 dark:text-gray-500">
+                <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-500">
+                  <span>
                     MLS: {(() => {
                       const mlsNumber = property.mlsNumber || ''
                       // Replace "NWM" prefix with "#" if present
@@ -313,6 +315,11 @@ export default function PropertyResults({
                         : mlsNumber
                     })()}
                   </span>
+                  {property.propertyDetails.onMarketDate && (
+                    <span>
+                      On Market: {new Date(property.propertyDetails.onMarketDate).toLocaleDateString()}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

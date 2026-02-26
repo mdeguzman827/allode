@@ -434,20 +434,33 @@ export default function PropertyPage() {
       )}
 
       {/* Listing Agent, Office - Below Image Gallery */}
-      {(property.propertyDetails.listingAgentFullName || property.propertyDetails.listOfficeName || 
+      {(property.propertyDetails.listingAgentFullName || property.propertyDetails.listOfficeName || property.propertyDetails.listOfficePhone ||
         (property.propertyDetails.mlsStatus?.toLowerCase() === 'sold' && 
          (property.propertyDetails.buyerAgentFullName || property.propertyDetails.buyerOfficeName))) && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
           <p className="text-gray-900 dark:text-white">
-            {(property.propertyDetails.listingAgentFullName || property.propertyDetails.listOfficeName) && (
+            {(property.propertyDetails.listingAgentFullName || property.propertyDetails.listOfficeName || property.propertyDetails.listOfficePhone) && (
               <>
                 <span className="font-medium">Listed by: </span>
                 {(() => {
                   const agent = property.propertyDetails.listingAgentFullName || ''
                   const office = property.propertyDetails.listOfficeName || ''
+                  const phone = property.propertyDetails.listOfficePhone || ''
+                  const formatPhone = (p: string) => {
+                    const digits = p.replace(/\D/g, '')
+                    const len = digits.length
+                    if (len === 10) {
+                      return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
+                    }
+                    if (len === 11 && digits.startsWith('1')) {
+                      return `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`
+                    }
+                    return p
+                  }
                   const parts = []
                   if (agent) parts.push(agent)
                   if (office) parts.push(office)
+                  if (phone) parts.push(formatPhone(phone))
                   return parts.length > 0 ? parts.join(', ') : null
                 })()}
               </>
@@ -455,7 +468,7 @@ export default function PropertyPage() {
             {property.propertyDetails.mlsStatus?.toLowerCase() === 'sold' && 
              (property.propertyDetails.buyerAgentFullName || property.propertyDetails.buyerOfficeName) && (
               <>
-                {(property.propertyDetails.listingAgentFullName || property.propertyDetails.listOfficeName) && ' • '}
+                {(property.propertyDetails.listingAgentFullName || property.propertyDetails.listOfficeName || property.propertyDetails.listOfficePhone) && ' • '}
                 <span className="font-medium">Bought by: </span>
                 {(() => {
                   const agent = property.propertyDetails.buyerAgentFullName || ''
@@ -498,55 +511,55 @@ export default function PropertyPage() {
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                 Property Details
               </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {/* Row 1: Home Type, Bedrooms, Bathrooms, Sq Ft */}
-                <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <p className="text-lg font-bold text-gray-900 dark:text-white">
+                <div className="text-center p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
+                  <p className="text-base font-bold text-gray-900 dark:text-white">
                     {property.propertyDetails.homeType || property.propertyDetails.type || '-'}
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Home Type</p>
+                  <p className="text-base text-gray-500 dark:text-gray-400">Home Type</p>
                 </div>
-                <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                <div className="text-center p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
+                  <p className="text-base font-bold text-gray-900 dark:text-white">
                     {property.propertyDetails.bedrooms ?? '-'}
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Bedrooms</p>
+                  <p className="text-base text-gray-500 dark:text-gray-400">Bedrooms</p>
                 </div>
-                <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                <div className="text-center p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
+                  <p className="text-base font-bold text-gray-900 dark:text-white">
                     {formatBathrooms(property.propertyDetails.bathrooms)}
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Bathrooms</p>
+                  <p className="text-base text-gray-500 dark:text-gray-400">Bathrooms</p>
                 </div>
-                <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {property.propertyDetails.squareFeet?.toLocaleString() || '-'}
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Sq Ft</p>
-                </div>
-                {/* Row 2: Year Built, Parking Total, Lot Size, Price per Sq Ft */}
-                <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {property.propertyDetails.yearBuilt ?? '-'}
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Year Built</p>
-                </div>
-                <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                <div className="text-center p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
+                  <p className="text-base font-bold text-gray-900 dark:text-white">
                     {property.propertyDetails.parkingTotal ?? '-'}
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Parking Total</p>
+                  <p className="text-base text-gray-500 dark:text-gray-400">Parking Total</p>
                 </div>
-                <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                {/* Row 2: Year Built, Sq Ft, Lot Size, Price per Sq Ft */}
+                <div className="text-center p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
+                  <p className="text-base font-bold text-gray-900 dark:text-white">
+                    {property.propertyDetails.yearBuilt ?? '-'}
+                  </p>
+                  <p className="text-base text-gray-500 dark:text-gray-400">Year Built</p>
+                </div>
+                <div className="text-center p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
+                  <p className="text-base font-bold text-gray-900 dark:text-white">
+                    {property.propertyDetails.squareFeet?.toLocaleString() || '-'}
+                  </p>
+                  <p className="text-base text-gray-500 dark:text-gray-400">Sq Ft</p>
+                </div>
+                <div className="text-center p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
+                  <p className="text-base font-bold text-gray-900 dark:text-white">
                     {property.propertyDetails.lotSizeAcres !== null && property.propertyDetails.lotSizeAcres !== undefined
                       ? property.propertyDetails.lotSizeAcres.toFixed(2)
                       : '-'}
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Lot Size (Acres)</p>
+                  <p className="text-base text-gray-500 dark:text-gray-400">Lot Size (Acres)</p>
                 </div>
-                <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                <div className="text-center p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
+                  <p className="text-base font-bold text-gray-900 dark:text-white">
                     {(() => {
                       const isSold = property.propertyDetails.mlsStatus?.toLowerCase() === 'sold'
                       const price = isSold && property.propertyDetails.closePrice 
@@ -557,19 +570,37 @@ export default function PropertyPage() {
                         : '-'
                     })()}
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Price/sq ft</p>
+                  <p className="text-base text-gray-500 dark:text-gray-400">Price/sq ft</p>
                 </div>
               </div>
               {(() => {
                 const daysOnMarket = property.propertyDetails.cumulativeDaysOnMarket ?? property.propertyDetails.cumulateDaysOnMarket
-                return daysOnMarket !== null && daysOnMarket !== undefined ? (
-                  <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <p className="text-gray-900 dark:text-white">
-                      <span className="font-bold">{daysOnMarket}</span>
-                      <span className="text-gray-600 dark:text-gray-300"> days on market</span>
+                const reviewDate = property.propertyDetails.nwmOffersReviewDate
+                const hasDays = daysOnMarket !== null && daysOnMarket !== undefined
+                const hasReviewDate = reviewDate && reviewDate.trim() !== ''
+                if (!hasDays && !hasReviewDate) return null
+                const formatReviewDate = (d: string) =>
+                  new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                return (
+                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <p className="text-gray-900 dark:text-white m-0">
+                      {hasDays && (
+                        <>
+                          <span className="font-bold">{daysOnMarket}</span>
+                          <span className="text-gray-600 dark:text-gray-300"> days on market</span>
+                        </>
+                      )}
+                      {hasDays && hasReviewDate && (
+                        <span className="text-gray-600 dark:text-gray-300">, </span>
+                      )}
+                      {hasReviewDate && (
+                        <span className="text-gray-600 dark:text-gray-300">
+                          Review Date: {formatReviewDate(reviewDate)}
+                        </span>
+                      )}
                     </p>
                   </div>
-                ) : null
+                )
               })()}
             </div>
 
@@ -580,7 +611,7 @@ export default function PropertyPage() {
                   Description
                 </h2>
                 {property.description && (
-                  <p className="text-gray-600 dark:text-gray-300 whitespace-pre-line leading-relaxed">
+                  <p className="text-base text-gray-600 dark:text-gray-300 whitespace-pre-line leading-relaxed">
                     {property.description}
                   </p>
                 )}
@@ -995,6 +1026,30 @@ export default function PropertyPage() {
                           <dd className="text-gray-900 dark:text-white">{property.propertyDetails.nwmWaterCompany}</dd>
                         </div>
                       )}
+                      {property.propertyDetails.coolingYN !== null && property.propertyDetails.coolingYN !== undefined && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Cooling</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.coolingYN ? 'Yes' : 'No'}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.cooling && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Cooling Type</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.cooling}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.heatingYN !== null && property.propertyDetails.heatingYN !== undefined && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Heating</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.heatingYN ? 'Yes' : 'No'}</dd>
+                        </div>
+                      )}
+                      {property.propertyDetails.heating && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Heating Type</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.heating}</dd>
+                        </div>
+                      )}
                       </dl>
                     </div>
                     </div>
@@ -1067,64 +1122,10 @@ export default function PropertyPage() {
                           <dd className="text-gray-900 dark:text-white">{property.propertyDetails.buyerBrokerageCompensationType}</dd>
                         </div>
                       )}
-                      {property.propertyDetails.coolingYN !== null && property.propertyDetails.coolingYN !== undefined && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Cooling</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.coolingYN ? 'Yes' : 'No'}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.cooling && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Cooling Type</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.cooling}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.heatingYN !== null && property.propertyDetails.heatingYN !== undefined && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Heating</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.heatingYN ? 'Yes' : 'No'}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.heating && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Heating Type</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.heating}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.cumulativeDaysOnMarket !== null && property.propertyDetails.cumulativeDaysOnMarket !== undefined && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Cumulative Days On Market</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.cumulativeDaysOnMarket}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.internetAddressDisplayYN !== null && property.propertyDetails.internetAddressDisplayYN !== undefined && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Internet Address Display</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.internetAddressDisplayYN ? 'Yes' : 'No'}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.internetEntireListingDisplayYN !== null && property.propertyDetails.internetEntireListingDisplayYN !== undefined && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Internet Entire Listing Display</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.internetEntireListingDisplayYN ? 'Yes' : 'No'}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.internetAutomatedValuationDisplayYN !== null && property.propertyDetails.internetAutomatedValuationDisplayYN !== undefined && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Internet Automated Valuation Display</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.internetAutomatedValuationDisplayYN ? 'Yes' : 'No'}</dd>
-                        </div>
-                      )}
                       {property.propertyDetails.levels && (
                         <div>
                           <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Levels</dt>
                           <dd className="text-gray-900 dark:text-white">{property.propertyDetails.levels}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.listOfficePhone && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">List Office Phone</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.listOfficePhone}</dd>
                         </div>
                       )}
                       {property.propertyDetails.listContractDate && (
@@ -1137,12 +1138,6 @@ export default function PropertyPage() {
                         <div>
                           <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Listing Terms</dt>
                           <dd className="text-gray-900 dark:text-white">{property.propertyDetails.listingTerms}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.originatingSystemModificationTimestamp && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Originating System Modification Timestamp</dt>
-                          <dd className="text-gray-900 dark:text-white">{new Date(property.propertyDetails.originatingSystemModificationTimestamp).toLocaleString()}</dd>
                         </div>
                       )}
                       {property.propertyDetails.newConstructionYN !== null && property.propertyDetails.newConstructionYN !== undefined && (
@@ -1161,36 +1156,6 @@ export default function PropertyPage() {
                         <div>
                           <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">NWM Offers Review Date</dt>
                           <dd className="text-gray-900 dark:text-white">{new Date(property.propertyDetails.nwmOffersReviewDate).toLocaleDateString()}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.onMarketDate && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">On Market Date</dt>
-                          <dd className="text-gray-900 dark:text-white">{new Date(property.propertyDetails.onMarketDate).toLocaleDateString()}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.nwmPreliminaryTitleOrdered && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">NWM Preliminary Title Ordered</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.nwmPreliminaryTitleOrdered}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.nwmSellerDisclosure && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">NWM Seller Disclosure</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.nwmSellerDisclosure}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.statusChangeTimestamp && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Status Change Timestamp</dt>
-                          <dd className="text-gray-900 dark:text-white">{new Date(property.propertyDetails.statusChangeTimestamp).toLocaleString()}</dd>
-                        </div>
-                      )}
-                      {property.propertyDetails.modificationTimestamp && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Modification Timestamp</dt>
-                          <dd className="text-gray-900 dark:text-white">{new Date(property.propertyDetails.modificationTimestamp).toLocaleString()}</dd>
                         </div>
                       )}
                       </dl>
