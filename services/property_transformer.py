@@ -422,6 +422,7 @@ def transform_property(raw_property: Dict[str, Any]) -> Dict[str, Any]:
         # NWM specific fields
         "nwm_offers": safe_convert(raw_property.get("NWM_Offers")),
         "nwm_offers_review_date": parse_date(raw_property.get("NWM_OffersReviewDate")),
+        "nwm_soc_comments": safe_convert(raw_property.get("NWM_SOCComments")),
         "nwm_power_company": safe_convert(raw_property.get("NWM_PowerCompany")),
         "nwm_preliminary_title_ordered": safe_convert(raw_property.get("NWM_PreliminaryTitleOrdered")),
         "nwm_seller_disclosure": safe_convert(raw_property.get("NWM_SellerDisclosure")),
@@ -663,6 +664,7 @@ def transform_for_frontend(property_obj, media_items: Optional[List] = None) -> 
             # NWM specific fields
             "nwmOffers": getattr(property_obj, 'nwm_offers', None),
             "nwmOffersReviewDate": format_date(getattr(property_obj, 'nwm_offers_review_date', None)),
+            "nwmSocComments": getattr(property_obj, 'nwm_soc_comments', None),
             "nwmPowerCompany": getattr(property_obj, 'nwm_power_company', None),
             "nwmPreliminaryTitleOrdered": getattr(property_obj, 'nwm_preliminary_title_ordered', None),
             "nwmSellerDisclosure": getattr(property_obj, 'nwm_seller_disclosure', None),

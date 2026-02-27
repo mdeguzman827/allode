@@ -15,6 +15,48 @@ const OFFER_MESSAGE_PREFIX = (address: string) =>
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
+const computeAllodeRebate = (property: {
+  price: number | null
+  propertyDetails: {
+    buyerBrokerageCompensation?: string | null
+    buyerBrokerageCompensationType?: string | null
+    nwmSocComments?: string | null
+  }
+}): number | null => {
+  const comp = property.propertyDetails.buyerBrokerageCompensation
+  const compType = property.propertyDetails.buyerBrokerageCompensationType
+  const nwmSocComments = property.propertyDetails.nwmSocComments
+  const listPrice = property.price
+  const extractNumber = (s: string | null | undefined): number | null => {
+    if (!s || typeof s !== 'string') return null
+    const match = s.match(/[\d,]+\.?\d*|\d+\.?\d*/)
+    if (!match) return null
+    const num = Number(match[0].replace(/,/g, ''))
+    return Number.isFinite(num) ? num : null
+  }
+  const compNum = extractNumber(comp) ?? extractNumber(nwmSocComments)
+  let rebate: number | null = null
+  if (compNum != null) {
+    const typeTrimmed = compType?.trim() ?? ''
+    const usePercentage = compNum < 10 || typeTrimmed === '%'
+    if (usePercentage && listPrice != null && listPrice > 0) {
+      rebate = (listPrice * compNum * 0.01) - 4995
+    } else if (typeTrimmed === '$') {
+      rebate = compNum - 4995
+    } else if (typeTrimmed && typeTrimmed !== '%' && typeTrimmed !== '$') {
+      rebate = 0
+    }
+  } else if (compType) {
+    const typeTrimmed = compType.trim()
+    if (typeTrimmed !== '%' && typeTrimmed !== '$') rebate = 0
+  }
+  if (rebate === null && listPrice != null && listPrice > 0) {
+    rebate = listPrice * 0.025 - 4995
+  }
+  if (rebate === null) return null
+  return Math.max(0, rebate)
+}
+
 interface Property {
   id: string
   mlsNumber: string
@@ -116,6 +158,7 @@ interface Property {
     // NWM specific fields
     nwmOffers?: string | null
     nwmOffersReviewDate?: string | null
+    nwmSocComments?: string | null
     nwmPowerCompany?: string | null
     nwmPreliminaryTitleOrdered?: string | null
     nwmSellerDisclosure?: string | null
@@ -496,18 +539,34 @@ export default function PropertyPage() {
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
               {/* Address and Price */}
               <div className="mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
-                <p className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                <div className="flex justify-between items-start gap-4 flex-wrap">
+                  <div>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                      {(() => {
+                        const isSold = property.propertyDetails.mlsStatus?.toLowerCase() === 'sold'
+                        const displayPrice = isSold && property.propertyDetails.closePrice 
+                          ? property.propertyDetails.closePrice 
+                          : property.price
+                        return displayPrice ? `$${displayPrice.toLocaleString()}` : 'Price N/A'
+                      })()}
+                    </p>
+                    <h1 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">
+                      {property.address.full || `${property.address.street || ''}, ${property.address.city}, ${property.address.state} ${property.address.zipCode}`.trim()}
+                    </h1>
+                  </div>
                   {(() => {
-                    const isSold = property.propertyDetails.mlsStatus?.toLowerCase() === 'sold'
-                    const displayPrice = isSold && property.propertyDetails.closePrice 
-                      ? property.propertyDetails.closePrice 
-                      : property.price
-                    return displayPrice ? `$${displayPrice.toLocaleString()}` : 'Price N/A'
+                    const rebate = computeAllodeRebate(property)
+                    if (rebate == null) return null
+                    return (
+                      <div className="shrink-0 p-4 rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400">
+                        <p className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-0.5">Allode Rebate</p>
+                        <p className="text-xl font-bold text-blue-900 dark:text-blue-100">
+                          ~${rebate.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                        </p>
+                      </div>
+                    )
                   })()}
-                </p>
-                <h1 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">
-                  {property.address.full || `${property.address.street || ''}, ${property.address.city}, ${property.address.state} ${property.address.zipCode}`.trim()}
-                </h1>
+                </div>
               </div>
 
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
@@ -741,18 +800,34 @@ export default function PropertyPage() {
                               <dd className="text-gray-900 dark:text-white">{new Date(property.propertyDetails.onMarketDate).toLocaleDateString()}</dd>
                             </div>
                           )}
-                          {property.propertyDetails.buyerBrokerageCompensation && (
-                            <div>
-                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Buyer Brokerage Compensation</dt>
-                              <dd className="text-gray-900 dark:text-white">{property.propertyDetails.buyerBrokerageCompensation}</dd>
-                            </div>
-                          )}
                           {property.propertyDetails.buyerBrokerageCompensationType && (
                             <div>
                               <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Buyer Brokerage Compensation Type</dt>
                               <dd className="text-gray-900 dark:text-white">{property.propertyDetails.buyerBrokerageCompensationType}</dd>
                             </div>
                           )}
+                          {property.propertyDetails.buyerBrokerageCompensation && (
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Buyer Brokerage Compensation</dt>
+                              <dd className="text-gray-900 dark:text-white">{property.propertyDetails.buyerBrokerageCompensation}</dd>
+                            </div>
+                          )}
+                          {property.propertyDetails.nwmSocComments && (
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">NWM SOC Comments</dt>
+                              <dd className="text-gray-900 dark:text-white">{property.propertyDetails.nwmSocComments}</dd>
+                            </div>
+                          )}
+                          {(() => {
+                            const rebate = computeAllodeRebate(property)
+                            if (rebate === null) return null
+                            return (
+                              <div>
+                                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Allode Rebate</dt>
+                                <dd className="text-gray-900 dark:text-white">~${rebate.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</dd>
+                              </div>
+                            )
+                          })()}
                           {property.propertyDetails.listingTerms && (
                             <div>
                               <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Listing Terms</dt>

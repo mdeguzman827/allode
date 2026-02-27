@@ -150,6 +150,7 @@ class Property(Base):
     # NWM specific fields
     nwm_offers = Column(String)
     nwm_offers_review_date = Column(DateTime)
+    nwm_soc_comments = Column(Text)
     nwm_power_company = Column(String)
     nwm_preliminary_title_ordered = Column(String)
     nwm_seller_disclosure = Column(String)
