@@ -49,6 +49,29 @@ def _expand_address_abbreviations(s: Optional[str]) -> str:
     return result
 
 
+def _get_address_unit_variants(s: Optional[str]) -> List[str]:
+    """
+    Return address variants for search so "Unit X" and "#X" are treated as equivalent.
+    E.g. "4521 47th Ave SW Unit B" returns ["4521 47th Ave SW Unit B", "4521 47th Ave SW #B"].
+    """
+    if not s:
+        return [""]
+    variants = [s]
+    # Unit X -> #X
+    unit_match = re.search(r"\bUnit\s+([A-Za-z0-9]+)\b", s, re.IGNORECASE)
+    if unit_match:
+        swapped = s[: unit_match.start()] + "#" + unit_match.group(1) + s[unit_match.end() :]
+        if swapped not in variants:
+            variants.append(swapped)
+    # #X -> Unit X (match # followed by identifier, avoid matching # in numbers like 98116)
+    hash_match = re.search(r"#([A-Za-z0-9]+)(?=\s|,|$)", s)
+    if hash_match:
+        swapped = s[: hash_match.start()] + "Unit " + hash_match.group(1) + s[hash_match.end() :]
+        if swapped not in variants:
+            variants.append(swapped)
+    return variants
+
+
 def parse_date(date_str: Optional[str]) -> Optional[datetime]:
     """Parse date string to datetime object"""
     if not date_str:
