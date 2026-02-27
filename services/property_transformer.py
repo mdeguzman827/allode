@@ -13,6 +13,42 @@ def _normalize_address(s: Optional[str]) -> str:
     return re.sub(r"\s*,\s*", ", ", s.strip())
 
 
+# Street type abbreviations for address search matching (e.g. "Ave" -> "Avenue")
+_ADDRESS_ABBREVIATIONS = [
+    (r"\bAve\b", "Avenue"),
+    (r"\bBlvd\b", "Boulevard"),
+    (r"\bCir\b", "Circle"),
+    (r"\bCt\b", "Court"),
+    (r"\bDr\b", "Drive"),
+    (r"\bHwy\b", "Highway"),
+    (r"\bLn\b", "Lane"),
+    (r"\bPkwy\b", "Parkway"),
+    (r"\bPl\b", "Place"),
+    (r"\bRd\b", "Road"),
+    (r"\bSt\b", "Street"),
+    (r"\bTer\b", "Terrace"),
+    (r"\bTerr\b", "Terrace"),
+    (r"\bSq\b", "Square"),
+    (r"\bSte\b", "Suite"),
+    (r"\bApt\b", "Apartment"),
+    (r"\bBldg\b", "Building"),
+]
+
+
+def _expand_address_abbreviations(s: Optional[str]) -> str:
+    """
+    Expand common street/address abbreviations so user input like "2446 Queen Anne Ave N"
+    matches stored addresses like "2446 Queen Anne Avenue N".
+    Uses word boundaries to avoid partial matches (e.g. "St" in "Street").
+    """
+    if not s:
+        return ""
+    result = s.strip()
+    for pattern, replacement in _ADDRESS_ABBREVIATIONS:
+        result = re.sub(pattern, replacement, result, flags=re.IGNORECASE)
+    return result
+
+
 def parse_date(date_str: Optional[str]) -> Optional[datetime]:
     """Parse date string to datetime object"""
     if not date_str:

@@ -39,7 +39,7 @@ else:
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database.models import get_engine, get_session, Property, PropertyMedia, AppMetadata, init_database
-from services.property_transformer import transform_for_frontend, _normalize_address
+from services.property_transformer import transform_for_frontend, _normalize_address, _expand_address_abbreviations
 from scripts.populate_database import populate_database
 from services.r2_storage import R2Storage
 from services.image_processor import ImageProcessor
@@ -284,7 +284,10 @@ async def get_properties(
         
         # Apply filters
         if address:
-            query = query.filter(Property.unparsed_address.ilike(f"%{address}%"))
+            addr_normalized = _normalize_address(address) or address
+            addr_expanded = _expand_address_abbreviations(addr_normalized) or addr_normalized
+            # Use expanded form so "Ave" matches "Avenue", "St" matches "Street", etc.
+            query = query.filter(Property.unparsed_address.ilike(f"%{addr_expanded}%"))
         if listing_id:
             query = query.filter(Property.listing_id.ilike(f"%{listing_id}%"))
         if city:
@@ -384,6 +387,8 @@ async def autocomplete(
         
         # Normalize query (remove trailing spaces around commas) so "500 Road , City, WA 98831" matches stored "500 Road, City, WA 98831"
         q_normalized = _normalize_address(q_trimmed) or q_trimmed
+        # Expand abbreviations for address search (e.g. "Ave" -> "Avenue", "St" -> "Street") so user input matches stored full forms
+        q_for_address = _expand_address_abbreviations(q_normalized) or q_normalized
         
         # Detect query type: starts with number = address/zip, starts with letter = city
         query_starts_with_number = q_trimmed[0].isdigit()
@@ -393,6 +398,8 @@ async def autocomplete(
         # Use prefix matching for better relevance (starts with, not contains)
         prefix_term = f"{q_normalized}%"
         contains_term = f"%{q_normalized}%"
+        address_prefix_term = f"{q_for_address}%"
+        address_contains_term = f"%{q_for_address}%"
         
         if query_starts_with_number:
             # Check if it looks like a zip code (all digits, 5 or fewer chars)
@@ -426,7 +433,7 @@ async def autocomplete(
                             "relevance": "prefix"
                         })
             
-            # Then addresses - get prefix matches
+            # Then addresses - get prefix matches (use expanded query so "Ave" matches "Avenue")
             address_limit = limit - len(suggestions) if is_potential_zip else limit
             address_prefix_query = db.query(
                 Property.unparsed_address,
@@ -435,7 +442,7 @@ async def autocomplete(
                 Property.id
             ).filter(
                 and_(
-                    Property.unparsed_address.ilike(prefix_term),
+                    Property.unparsed_address.ilike(address_prefix_term),
                     Property.street_number.isnot(None),
                     Property.city.isnot(None)
                 )
@@ -470,7 +477,7 @@ async def autocomplete(
                     Property.id
                 ).filter(
                     and_(
-                        Property.unparsed_address.ilike(contains_term),
+                        Property.unparsed_address.ilike(address_contains_term),
                         Property.street_number.isnot(None),
                         Property.city.isnot(None)
                     )
@@ -501,9 +508,10 @@ async def autocomplete(
             
             # When query looks like full address but no matches yet, try regex match allowing flexible comma spacing
             # Handles stored "500 Road , City, WA 98831" when user types "500 Road, City, WA 98831"
+            # Use expanded form so "Ave" in user input matches "Avenue" in DB
             address_count = sum(1 for s in suggestions if s.get("type") == "address")
-            if address_count == 0 and "," in q_normalized and len(q_normalized) > 15:
-                parts = [re.escape(p.strip()) for p in q_normalized.split(",") if p.strip()]
+            if address_count == 0 and "," in q_for_address and len(q_for_address) > 15:
+                parts = [re.escape(p.strip()) for p in q_for_address.split(",") if p.strip()]
                 if len(parts) >= 2:
                     regex_pattern = r"^\s*" + r"\s*,\s*".join(parts) + r"\s*$"
                     exact_match_query = db.query(
@@ -635,7 +643,7 @@ async def autocomplete(
                             "relevance": "contains"
                         })
             
-            # Add addresses as secondary (fewer results)
+            # Add addresses as secondary (fewer results, use expanded query for abbreviation matching)
             address_limit = max(1, limit // 3)
             address_query = db.query(
                 Property.unparsed_address,
@@ -644,7 +652,7 @@ async def autocomplete(
                 Property.id
             ).filter(
                 and_(
-                    Property.unparsed_address.ilike(prefix_term),
+                    Property.unparsed_address.ilike(address_prefix_term),
                     Property.street_number.isnot(None),
                     Property.city.isnot(None)
                 )
