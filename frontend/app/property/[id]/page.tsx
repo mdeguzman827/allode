@@ -576,9 +576,20 @@ export default function PropertyPage() {
                 </div>
               </div>
               {(() => {
-                const daysOnMarket = property.propertyDetails.cumulativeDaysOnMarket ?? property.propertyDetails.cumulateDaysOnMarket
-                const reviewDate = property.propertyDetails.nwmOffersReviewDate
+                const onMarketDate = property.propertyDetails.onMarketDate
+                const storedDays = property.propertyDetails.cumulativeDaysOnMarket ?? property.propertyDetails.cumulateDaysOnMarket
+                const daysOnMarket = onMarketDate
+                  ? (() => {
+                      const today = new Date()
+                      today.setHours(0, 0, 0, 0)
+                      const listDate = new Date(onMarketDate)
+                      listDate.setHours(0, 0, 0, 0)
+                      const diffMs = today.getTime() - listDate.getTime()
+                      return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)))
+                    })()
+                  : storedDays
                 const hasDays = daysOnMarket !== null && daysOnMarket !== undefined
+                const reviewDate = property.propertyDetails.nwmOffersReviewDate
                 const hasReviewDate = reviewDate && reviewDate.trim() !== ''
                 if (!hasDays && !hasReviewDate) return null
                 const formatReviewDate = (d: string) =>
