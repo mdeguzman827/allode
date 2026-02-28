@@ -574,65 +574,150 @@ export default function PropertyPage() {
                 Property Details
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {/* Row 1: Home Type, Bedrooms, Bathrooms, Sq Ft */}
-                <div className="text-center p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
-                  <p className="text-base font-bold text-gray-900 dark:text-white">
-                    {property.propertyDetails.homeType || property.propertyDetails.type || '-'}
-                  </p>
-                  <p className="text-base text-gray-500 dark:text-gray-400">Home Type</p>
+                {/* Row 1: Home Type, Bedrooms, Bathrooms, Parking Total */}
+                <div className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
+                  <div className="shrink-0 w-8 h-8 flex items-center justify-center text-gray-600 dark:text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                      <polyline points="9 22 9 12 15 12 15 22" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-base font-bold text-gray-900 dark:text-white truncate">
+                      {property.propertyDetails.homeType || property.propertyDetails.type || '-'}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Home Type</p>
+                  </div>
                 </div>
-                <div className="text-center p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
-                  <p className="text-base font-bold text-gray-900 dark:text-white">
-                    {property.propertyDetails.bedrooms ?? '-'}
-                  </p>
-                  <p className="text-base text-gray-500 dark:text-gray-400">Bedrooms</p>
+                <div className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
+                  <div className="shrink-0 w-8 h-8 flex items-center justify-center text-gray-600 dark:text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+                    <path d="M2 4v16M2 11h20v9M6 11V9a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M2 11h20" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-base font-bold text-gray-900 dark:text-white">
+                      {property.propertyDetails.bedrooms ?? '-'}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Bedrooms</p>
+                  </div>
                 </div>
-                <div className="text-center p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
-                  <p className="text-base font-bold text-gray-900 dark:text-white">
-                    {formatBathrooms(property.propertyDetails.bathrooms)}
-                  </p>
-                  <p className="text-base text-gray-500 dark:text-gray-400">Bathrooms</p>
+                <div className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
+                  <div className="shrink-0 w-8 h-8 flex items-center justify-center text-gray-600 dark:text-gray-400">
+                    <svg width="24" viewBox="0 0 24 24" fill="none" stroke={"currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" >
+                      <path d="M7 2h10v7H7z" />
+                      <path d="M10 2v2" />
+                      <path d="M5 9h14c0 4-2 7-7 7s-7-3-7-7Z" />
+                      <path d="M8 16c0 4 1 6 4 6s4-2 4-6" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-base font-bold text-gray-900 dark:text-white">
+                      {formatBathrooms(property.propertyDetails.bathrooms)}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Bathrooms</p>
+                  </div>
                 </div>
-                <div className="text-center p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
-                  <p className="text-base font-bold text-gray-900 dark:text-white">
-                    {property.propertyDetails.parkingTotal ?? '-'}
-                  </p>
-                  <p className="text-base text-gray-500 dark:text-gray-400">Parking Total</p>
+                <div className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
+                  <div className="shrink-0 w-8 h-8 flex items-center justify-center text-gray-600 dark:text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+                      <path d="M5 17h14v-3H5v3z" />
+                      <path d="M5 14V9l2-4h10l2 4v5" />
+                      <circle cx="7.5" cy="17" r="1.5" />
+                      <circle cx="16.5" cy="17" r="1.5" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-base font-bold text-gray-900 dark:text-white">
+                      {property.propertyDetails.parkingTotal ?? '-'}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Parking Total</p>
+                  </div>
                 </div>
                 {/* Row 2: Year Built, Sq Ft, Lot Size, Price per Sq Ft */}
-                <div className="text-center p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
-                  <p className="text-base font-bold text-gray-900 dark:text-white">
-                    {property.propertyDetails.yearBuilt ?? '-'}
-                  </p>
-                  <p className="text-base text-gray-500 dark:text-gray-400">Year Built</p>
+                <div className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
+                  <div className="shrink-0 w-8 h-8 flex items-center justify-center text-gray-600 dark:text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+                      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-base font-bold text-gray-900 dark:text-white">
+                      {property.propertyDetails.yearBuilt ?? '-'}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Year Built</p>
+                  </div>
                 </div>
-                <div className="text-center p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
-                  <p className="text-base font-bold text-gray-900 dark:text-white">
-                    {property.propertyDetails.squareFeet?.toLocaleString() || '-'}
-                  </p>
-                  <p className="text-base text-gray-500 dark:text-gray-400">Sq Ft</p>
+                <div className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
+                  <div className="shrink-0 w-8 h-8 flex items-center justify-center text-gray-600 dark:text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+                      <path d="M21.3 8.25L8.25 21.3c-1 1-2.5 1-3.5 0l-1-1c-1-1-1-2.5 0-3.5L16.8 3.75c1-1 2.5-1 3.5 0l1 1c1 1 1 2.5 0 3.5z" />
+                      {[6, 9, 12, 15, 18].map((tick, index) => {
+                        const tickLength = index % 2 === 0 ? 3 : 2;
+                        return (
+                          <line
+                            key={tick}
+                            x1={tick}
+                            y1={24 - tick}
+                            x2={tick + tickLength}
+                            y2={24 - tick + tickLength}
+                            stroke={"currentColor"}
+                          />
+                        );
+                      })}
+                    </svg>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-base font-bold text-gray-900 dark:text-white">
+                      {property.propertyDetails.squareFeet?.toLocaleString() || '-'}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Sq Ft</p>
+                  </div>
                 </div>
-                <div className="text-center p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
-                  <p className="text-base font-bold text-gray-900 dark:text-white">
-                    {property.propertyDetails.lotSizeAcres !== null && property.propertyDetails.lotSizeAcres !== undefined
-                      ? property.propertyDetails.lotSizeAcres.toFixed(2)
-                      : '-'}
-                  </p>
-                  <p className="text-base text-gray-500 dark:text-gray-400">Lot Size (Acres)</p>
+                <div className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
+                  <div className="shrink-0 w-8 h-8 flex items-center justify-center text-gray-600 dark:text-gray-400">
+                    <svg width={40} height={30} viewBox="0 0 24 24" fill="none" stroke={"currentColor"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      {[...Array(4)].map((_, i) => (
+                        <path 
+                          key={i} 
+                          d={"M2,20 V8 L4,5 L6,8 V20 Z"} 
+                          // Offset each picket horizontally by 5 units
+                          transform={`translate(${i * 5}, 0)`} 
+                          fill="white" 
+                        />
+                      ))}
+                    </svg>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-base font-bold text-gray-900 dark:text-white">
+                      {property.propertyDetails.lotSizeAcres !== null && property.propertyDetails.lotSizeAcres !== undefined
+                        ? property.propertyDetails.lotSizeAcres.toFixed(2)
+                        : '-'}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Lot Size (Acres)</p>
+                  </div>
                 </div>
-                <div className="text-center p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
-                  <p className="text-base font-bold text-gray-900 dark:text-white">
-                    {(() => {
-                      const isSold = property.propertyDetails.mlsStatus?.toLowerCase() === 'sold'
-                      const price = isSold && property.propertyDetails.closePrice 
-                        ? property.propertyDetails.closePrice 
-                        : property.price
-                      return price && property.propertyDetails.squareFeet
-                        ? `$${Math.round(price / property.propertyDetails.squareFeet).toLocaleString()}`
-                        : '-'
-                    })()}
-                  </p>
-                  <p className="text-base text-gray-500 dark:text-gray-400">Price/sq ft</p>
+                <div className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-md">
+                  <div className="shrink-0 w-8 h-8 flex items-center justify-center text-gray-600 dark:text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+                      <line x1="12" y1="1" x2="12" y2="23" />
+                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-base font-bold text-gray-900 dark:text-white">
+                      {(() => {
+                        const isSold = property.propertyDetails.mlsStatus?.toLowerCase() === 'sold'
+                        const price = isSold && property.propertyDetails.closePrice 
+                          ? property.propertyDetails.closePrice 
+                          : property.price
+                        return price && property.propertyDetails.squareFeet
+                          ? `$${Math.round(price / property.propertyDetails.squareFeet).toLocaleString()}`
+                          : '-'
+                      })()}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Price/sq ft</p>
+                  </div>
                 </div>
               </div>
               {(() => {
