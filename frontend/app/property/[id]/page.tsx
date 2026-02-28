@@ -558,7 +558,7 @@ export default function PropertyPage() {
                     const rebate = computeAllodeRebate(property)
                     if (rebate == null) return null
                     return (
-                      <div className="shrink-0 p-4 rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400">
+                      <div className="shrink-0 p-4 rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400 text-center">
                         <p className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-0.5">Allode Rebate</p>
                         <p className="text-xl font-bold text-blue-900 dark:text-blue-100">
                           ~${rebate.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}

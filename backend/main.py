@@ -46,6 +46,16 @@ from services.image_processor import ImageProcessor
 
 # In-memory image cache: {cache_key: (image_data, content_type, expires_at)}
 image_cache = {}
+
+
+def _looks_like_mls_id(s: str) -> bool:
+    """True if string looks like MLS/listing ID (e.g. '2217575' or 'NWM2217575'). Excludes 5-digit zip codes."""
+    if not s or not s.strip():
+        return False
+    t = s.strip().replace(" ", "")
+    if t.upper().startswith("NWM"):
+        t = t[3:]
+    return len(t) >= 6 and t.isdigit()
 CACHE_DURATION_HOURS = 24  # Cache images for 24 hours
 
 LAST_POPULATE_RUN_FILE = os.path.join(backend_dir, "last_populate_run.txt")
@@ -287,8 +297,10 @@ async def get_properties(
             addr_normalized = _normalize_address(address) or address
             addr_expanded = _expand_address_abbreviations(addr_normalized) or addr_normalized
             addr_variants = _get_address_unit_variants(addr_expanded)
-            # Use expanded form + Unit/# variants so "Ave" matches "Avenue", "Unit B" matches "#B", etc.
-            query = query.filter(or_(*[Property.unparsed_address.ilike(f"%{v}%") for v in addr_variants]))
+            address_conditions = or_(*[Property.unparsed_address.ilike(f"%{v}%") for v in addr_variants])
+            if _looks_like_mls_id(address):
+                address_conditions = or_(address_conditions, Property.listing_id.ilike(f"%{address.strip()}%"))
+            query = query.filter(address_conditions)
         if listing_id:
             query = query.filter(Property.listing_id.ilike(f"%{listing_id}%"))
         if city:
@@ -405,10 +417,33 @@ async def autocomplete(
         address_contains_conditions = or_(*[Property.unparsed_address.ilike(f"%{v}%") for v in address_variants])
         
         if query_starts_with_number:
+            # If query looks like MLS/listing ID (e.g. "2217575" or "NWM2217575"), search by listing_id
+            if _looks_like_mls_id(q_trimmed):
+                mls_query = db.query(
+                    Property.unparsed_address,
+                    Property.city,
+                    Property.state_or_province,
+                    Property.id,
+                    Property.listing_id
+                ).filter(
+                    Property.listing_id.ilike(f"%{q_trimmed.strip()}%")
+                ).limit(limit).all()
+                for unparsed_address, city, state, prop_id, listing_id in mls_query:
+                    addr = _normalize_address(unparsed_address) if unparsed_address else (listing_id or "")
+                    suggestions.append({
+                        "type": "address",
+                        "value": addr,
+                        "city": city or "",
+                        "state": state or "",
+                        "propertyId": prop_id,
+                        "display": f"{listing_id or ''} - {addr}" if addr and listing_id else (addr or listing_id or ""),
+                        "relevance": "prefix"
+                    })
+            
             # Check if it looks like a zip code (all digits, 5 or fewer chars)
             is_potential_zip = q_trimmed.isdigit() and len(q_trimmed) <= 5
             
-            if is_potential_zip:
+            if is_potential_zip and len(suggestions) < limit:
                 # Prioritize zip codes first
                 zip_limit = max(3, limit // 2)
                 zip_query = db.query(

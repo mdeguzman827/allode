@@ -189,6 +189,13 @@ export default function ResultsPage() {
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   })
 
+  // Redirect to property page when exactly 1 result
+  useEffect(() => {
+    if (data?.properties?.length === 1 && data?.total === 1) {
+      router.replace(`/property/${data.properties[0].id}`)
+    }
+  }, [data, router])
+
   const updateURLParams = useCallback((updates: {
     address?: string
     city?: string
