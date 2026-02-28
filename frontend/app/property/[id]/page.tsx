@@ -54,7 +54,8 @@ const computeAllodeRebate = (property: {
     rebate = listPrice * 0.025 - 4995
   }
   if (rebate === null) return null
-  return Math.max(0, rebate)
+  const finalRebate = Math.max(0, rebate)
+  return finalRebate > 0 ? finalRebate : null
 }
 
 interface Property {
