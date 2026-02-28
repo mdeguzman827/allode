@@ -172,6 +172,9 @@ class Property(Base):
     originating_system_name = Column(String)
     mlg_can_view = Column(Boolean)
     mlg_can_use = Column(Boolean)
+
+    # Unit types (from API $expand=UnitTypes), stored as JSON array
+    unit_types = Column(Text)
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)

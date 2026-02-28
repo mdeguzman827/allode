@@ -1,6 +1,7 @@
 """
 Transform NWMLS API data to normalized format
 """
+import json
 import re
 from typing import Dict, Any, Optional, List
 from datetime import datetime
@@ -282,6 +283,52 @@ def _to_bathroom_float(value: Any) -> Optional[float]:
     return None
 
 
+def _format_unit_type_date(value: Any) -> Optional[str]:
+    """Format date from UnitTypes for JSON/frontend (ISO string or None)."""
+    if value is None:
+        return None
+    dt = parse_date(value)
+    return dt.isoformat() if dt else (str(value) if value else None)
+
+
+def _parse_unit_types_json(value: Optional[str]) -> List[Dict[str, Any]]:
+    """Parse unit_types JSON string from DB; return list or []."""
+    if not value:
+        return []
+    try:
+        parsed = json.loads(value)
+        return parsed if isinstance(parsed, list) else []
+    except (TypeError, json.JSONDecodeError):
+        return []
+
+
+def transform_unit_types(unit_types_list: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Transform UnitTypes from NWMLS API to frontend-friendly format.
+    Extracts: UnitTypeKey, NWM_UnitDishwasher, NWM_UnitName, NWM_UnitRangeOven, NWM_UnitRefrigerator,
+    UnitTypeActualRent, NWM_UnitSquareFeet, NWM_UnitWasherDryer, UnitTypeBathsTotal, UnitTypeBedsTotal,
+    NWM_UnitTenantDescription, NWM_UnitTypeOfUse, NWM_UnitLeaseExpirationDate.
+    """
+    result = []
+    for ut in unit_types_list or []:
+        result.append({
+            "unitTypeKey": ut.get("UnitTypeKey"),
+            "nwmUnitDishwasher": ut.get("NWM_UnitDishwasher"),
+            "nwmUnitName": ut.get("NWM_UnitName"),
+            "nwmUnitRangeOven": ut.get("NWM_UnitRangeOven"),
+            "nwmUnitRefrigerator": ut.get("NWM_UnitRefrigerator"),
+            "unitTypeActualRent": ut.get("UnitTypeActualRent"),
+            "nwmUnitSquareFeet": ut.get("NWM_UnitSquareFeet"),
+            "nwmUnitWasherDryer": ut.get("NWM_UnitWasherDryer"),
+            "unitTypeBathsTotal": ut.get("UnitTypeBathsTotal"),
+            "unitTypeBedsTotal": ut.get("UnitTypeBedsTotal"),
+            "nwmUnitTenantDescription": ut.get("NWM_UnitTenantDescription"),
+            "nwmUnitTypeOfUse": ut.get("NWM_UnitTypeOfUse"),
+            "nwmUnitLeaseExpirationDate": _format_unit_type_date(ut.get("NWM_UnitLeaseExpirationDate")),
+        })
+    return result
+
+
 def transform_property(raw_property: Dict[str, Any]) -> Dict[str, Any]:
     """
     Transform NWMLS API property data to normalized database format
@@ -443,6 +490,7 @@ def transform_property(raw_property: Dict[str, Any]) -> Dict[str, Any]:
         "originating_system_name": safe_convert(raw_property.get("OriginatingSystemName")),
         "mlg_can_view": convert_boolean(raw_property.get("MlgCanVeiw") or raw_property.get("MlgCanView")),
         "mlg_can_use": convert_boolean(raw_property.get("MlgCanUse")),
+        "unit_types": json.dumps(transform_unit_types(raw_property.get("UnitTypes") or [])),
     }
     
     # Remove None values to avoid database issues, but always keep required fields
@@ -686,6 +734,7 @@ def transform_for_frontend(property_obj, media_items: Optional[List] = None) -> 
             "mlgCanView": getattr(property_obj, 'mlg_can_view', None),
             "mlgCanUse": getattr(property_obj, 'mlg_can_use', None),
         },
+        "unitTypes": _parse_unit_types_json(getattr(property_obj, 'unit_types', None)),
         "images": images,
         "description": property_obj.public_remarks,
         "coordinates": {

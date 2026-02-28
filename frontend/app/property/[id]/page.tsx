@@ -188,6 +188,23 @@ interface Property {
   listingDate: string | null
   lastUpdated: string | null
   lastPopulateRun?: string | null
+  unitTypes?: UnitType[] | null
+}
+
+interface UnitType {
+  unitTypeKey?: string | null
+  nwmUnitDishwasher?: string | boolean | null
+  nwmUnitName?: string | null
+  nwmUnitRangeOven?: string | boolean | null
+  nwmUnitRefrigerator?: string | boolean | null
+  unitTypeActualRent?: number | null
+  nwmUnitSquareFeet?: number | null
+  nwmUnitWasherDryer?: string | boolean | null
+  unitTypeBathsTotal?: number | null
+  unitTypeBedsTotal?: number | null
+  nwmUnitTenantDescription?: string | null
+  nwmUnitTypeOfUse?: string | null
+  nwmUnitLeaseExpirationDate?: string | null
 }
 
 export default function PropertyPage() {
@@ -206,6 +223,7 @@ export default function PropertyPage() {
     publicFacts: false,
     location: false,
     listingInformation: false,
+    unitTypes: false,
   })
   const [isTourModalOpen, setIsTourModalOpen] = useState(false)
   const [tourMessage, setTourMessage] = useState('')
@@ -341,6 +359,7 @@ export default function PropertyPage() {
       publicFacts: !allExpanded,
       location: !allExpanded,
       listingInformation: !allExpanded,
+      unitTypes: !allExpanded,
     })
   }
 
@@ -937,6 +956,162 @@ export default function PropertyPage() {
                     </div>
                   )}
                 </div>
+
+                {/* Unit Types Section (from API UnitTypes expand) */}
+                {property.unitTypes && property.unitTypes.length > 0 && (
+                  <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => handleToggleSection('unitTypes')}
+                      className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                      aria-label="Toggle Unit Types section"
+                      aria-expanded={expandedSections.unitTypes}
+                      tabIndex={0}
+                      onKeyDown={(e) => e.key === 'Enter' && handleToggleSection('unitTypes')}
+                    >
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        Unit Types ({property.unitTypes.length})
+                      </h3>
+                      <svg
+                        className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${expandedSections.unitTypes ? 'transform rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {expandedSections.unitTypes && (
+                      <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-6">
+                        {property.unitTypes.map((unit, index) => {
+                          const hasAny = [
+                            unit.unitTypeKey,
+                            unit.nwmUnitDishwasher,
+                            unit.nwmUnitName,
+                            unit.nwmUnitRangeOven,
+                            unit.nwmUnitRefrigerator,
+                            unit.unitTypeActualRent,
+                            unit.nwmUnitSquareFeet,
+                            unit.nwmUnitWasherDryer,
+                            unit.unitTypeBathsTotal,
+                            unit.unitTypeBedsTotal,
+                            unit.nwmUnitTenantDescription,
+                            unit.nwmUnitTypeOfUse,
+                            unit.nwmUnitLeaseExpirationDate,
+                          ].some(v => v !== null && v !== undefined && v !== '')
+                          if (!hasAny) return null
+                          const formatVal = (v: string | number | boolean | null | undefined): string => {
+                            if (v === null || v === undefined) return '-'
+                            if (typeof v === 'boolean') return v ? 'Yes' : 'No'
+                            if (typeof v === 'number' && v.toLocaleString) return v.toLocaleString()
+                            return String(v)
+                          }
+                          const formatDate = (s: string | null | undefined): string => {
+                            if (!s) return '-'
+                            try {
+                              return new Date(s).toLocaleDateString()
+                            } catch {
+                              return String(s)
+                            }
+                          }
+                          return (
+                            <div
+                              key={unit.unitTypeKey ?? index}
+                              className="rounded-lg border border-gray-200 dark:border-gray-600 p-4 bg-gray-50/50 dark:bg-gray-700/50"
+                            >
+                              <h4 className="text-base font-medium text-gray-900 dark:text-white mb-4">
+                                {unit.nwmUnitName || unit.unitTypeKey || `Unit ${index + 1}`}
+                              </h4>
+                              <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+                                {unit.unitTypeKey != null && unit.unitTypeKey !== '' && (
+                                  <div>
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Unit Type Key</dt>
+                                    <dd className="text-gray-900 dark:text-white">{formatVal(unit.unitTypeKey)}</dd>
+                                  </div>
+                                )}
+                                {unit.nwmUnitDishwasher != null && unit.nwmUnitDishwasher !== '' && (
+                                  <div>
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Dishwasher</dt>
+                                    <dd className="text-gray-900 dark:text-white">{formatVal(unit.nwmUnitDishwasher)}</dd>
+                                  </div>
+                                )}
+                                {unit.nwmUnitName != null && unit.nwmUnitName !== '' && (
+                                  <div>
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Unit Name</dt>
+                                    <dd className="text-gray-900 dark:text-white">{formatVal(unit.nwmUnitName)}</dd>
+                                  </div>
+                                )}
+                                {unit.nwmUnitRangeOven != null && unit.nwmUnitRangeOven !== '' && (
+                                  <div>
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Range/Oven</dt>
+                                    <dd className="text-gray-900 dark:text-white">{formatVal(unit.nwmUnitRangeOven)}</dd>
+                                  </div>
+                                )}
+                                {unit.nwmUnitRefrigerator != null && unit.nwmUnitRefrigerator !== '' && (
+                                  <div>
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Refrigerator</dt>
+                                    <dd className="text-gray-900 dark:text-white">{formatVal(unit.nwmUnitRefrigerator)}</dd>
+                                  </div>
+                                )}
+                                {unit.unitTypeActualRent != null && (
+                                  <div>
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Actual Rent</dt>
+                                    <dd className="text-gray-900 dark:text-white">
+                                      {typeof unit.unitTypeActualRent === 'number'
+                                        ? `$${unit.unitTypeActualRent.toLocaleString()}`
+                                        : formatVal(unit.unitTypeActualRent)}
+                                    </dd>
+                                  </div>
+                                )}
+                                {unit.nwmUnitSquareFeet != null && (
+                                  <div>
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Square Feet</dt>
+                                    <dd className="text-gray-900 dark:text-white">{formatVal(unit.nwmUnitSquareFeet)}</dd>
+                                  </div>
+                                )}
+                                {unit.nwmUnitWasherDryer != null && unit.nwmUnitWasherDryer !== '' && (
+                                  <div>
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Washer/Dryer</dt>
+                                    <dd className="text-gray-900 dark:text-white">{formatVal(unit.nwmUnitWasherDryer)}</dd>
+                                  </div>
+                                )}
+                                {unit.unitTypeBathsTotal != null && (
+                                  <div>
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Baths Total</dt>
+                                    <dd className="text-gray-900 dark:text-white">{formatVal(unit.unitTypeBathsTotal)}</dd>
+                                  </div>
+                                )}
+                                {unit.unitTypeBedsTotal != null && (
+                                  <div>
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Beds Total</dt>
+                                    <dd className="text-gray-900 dark:text-white">{formatVal(unit.unitTypeBedsTotal)}</dd>
+                                  </div>
+                                )}
+                                {unit.nwmUnitTenantDescription != null && unit.nwmUnitTenantDescription !== '' && (
+                                  <div className="sm:col-span-2 lg:col-span-3">
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Tenant Description</dt>
+                                    <dd className="text-gray-900 dark:text-white">{formatVal(unit.nwmUnitTenantDescription)}</dd>
+                                  </div>
+                                )}
+                                {unit.nwmUnitTypeOfUse != null && unit.nwmUnitTypeOfUse !== '' && (
+                                  <div>
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Type of Use</dt>
+                                    <dd className="text-gray-900 dark:text-white">{formatVal(unit.nwmUnitTypeOfUse)}</dd>
+                                  </div>
+                                )}
+                                {unit.nwmUnitLeaseExpirationDate != null && unit.nwmUnitLeaseExpirationDate !== '' && (
+                                  <div>
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Lease Expiration Date</dt>
+                                    <dd className="text-gray-900 dark:text-white">{formatDate(unit.nwmUnitLeaseExpirationDate)}</dd>
+                                  </div>
+                                )}
+                              </dl>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Parking Section */}
                 <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
