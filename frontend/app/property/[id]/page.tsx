@@ -857,119 +857,19 @@ export default function PropertyPage() {
                 </button>
               </div>
               <div className="space-y-4">
-                {/* Listing Information Section */}
-                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                  <button
-                    onClick={() => handleToggleSection('listingInformation')}
-                    className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                    aria-label="Toggle Listing Information section"
-                    aria-expanded={expandedSections.listingInformation}
-                  >
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Listing Information
-                    </h3>
-                    <svg
-                      className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${expandedSections.listingInformation ? 'transform rotate-180' : ''}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  {expandedSections.listingInformation && (
-                    <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <dl className="space-y-4">
-                      {property.propertyDetails.listingAgentFullName && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Listing Agent Name</dt>
-                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.listingAgentFullName}</dd>
-                        </div>
-                      )}
-                          {property.propertyDetails.listOfficeName && (
-                            <div>
-                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Listing Office Name</dt>
-                              <dd className="text-gray-900 dark:text-white">{property.propertyDetails.listOfficeName}</dd>
-                            </div>
-                          )}
-                          {property.propertyDetails.listOfficePhone && (
-                            <div>
-                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">List Office Phone</dt>
-                              <dd className="text-gray-900 dark:text-white">{property.propertyDetails.listOfficePhone}</dd>
-                            </div>
-                          )}
-                          {property.propertyDetails.onMarketDate && (
-                            <div>
-                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">On Market Date</dt>
-                              <dd className="text-gray-900 dark:text-white">{new Date(property.propertyDetails.onMarketDate).toLocaleDateString()}</dd>
-                            </div>
-                          )}
-                          {property.propertyDetails.buyerBrokerageCompensationType && (
-                            <div>
-                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Buyer Brokerage Compensation Type</dt>
-                              <dd className="text-gray-900 dark:text-white">{property.propertyDetails.buyerBrokerageCompensationType}</dd>
-                            </div>
-                          )}
-                          {property.propertyDetails.buyerBrokerageCompensation && (
-                            <div>
-                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Buyer Brokerage Compensation</dt>
-                              <dd className="text-gray-900 dark:text-white">{property.propertyDetails.buyerBrokerageCompensation}</dd>
-                            </div>
-                          )}
-                          {property.propertyDetails.nwmSocComments && (
-                            <div>
-                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">NWM SOC Comments</dt>
-                              <dd className="text-gray-900 dark:text-white">{property.propertyDetails.nwmSocComments}</dd>
-                            </div>
-                          )}
-                          {(() => {
-                            const rebate = computeAllodeRebate(property)
-                            if (rebate === null) return null
-                            return (
-                              <div>
-                                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Allode Rebate</dt>
-                                <dd className="text-gray-900 dark:text-white">~${rebate.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</dd>
-                              </div>
-                            )
-                          })()}
-                          {property.propertyDetails.listingTerms && (
-                            <div>
-                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Listing Terms</dt>
-                              <dd className="text-gray-900 dark:text-white">{property.propertyDetails.listingTerms}</dd>
-                            </div>
-                          )}
-                          {property.propertyDetails.nwmOffers && (
-                            <div>
-                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">NWM Offers</dt>
-                              <dd className="text-gray-900 dark:text-white">{property.propertyDetails.nwmOffers}</dd>
-                            </div>
-                          )}
-                      {property.propertyDetails.nwmOffersReviewDate && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">NWM Offers Review Date</dt>
-                          <dd className="text-gray-900 dark:text-white">{new Date(property.propertyDetails.nwmOffersReviewDate).toLocaleDateString()}</dd>
-                        </div>
-                      )}
-                      </dl>
-                    </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Unit Types Section (from API UnitTypes expand) */}
+                {/* Units Section (from API UnitTypes expand) */}
                 {property.unitTypes && property.unitTypes.length > 0 && (
                   <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                     <button
                       onClick={() => handleToggleSection('unitTypes')}
                       className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                      aria-label="Toggle Unit Types section"
+                      aria-label="Toggle Units section"
                       aria-expanded={expandedSections.unitTypes}
                       tabIndex={0}
                       onKeyDown={(e) => e.key === 'Enter' && handleToggleSection('unitTypes')}
                     >
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        Unit Types ({property.unitTypes.length})
+                        Units ({property.unitTypes.length})
                       </h3>
                       <svg
                         className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${expandedSections.unitTypes ? 'transform rotate-180' : ''}`}
@@ -994,7 +894,6 @@ export default function PropertyPage() {
                             unit.nwmUnitWasherDryer,
                             unit.unitTypeBathsTotal,
                             unit.unitTypeBedsTotal,
-                            unit.nwmUnitTenantDescription,
                             unit.nwmUnitTypeOfUse,
                             unit.nwmUnitLeaseExpirationDate,
                           ].some(v => v !== null && v !== undefined && v !== '')
@@ -1019,39 +918,9 @@ export default function PropertyPage() {
                               className="rounded-lg border border-gray-200 dark:border-gray-600 p-4 bg-gray-50/50 dark:bg-gray-700/50"
                             >
                               <h4 className="text-base font-medium text-gray-900 dark:text-white mb-4">
-                                {unit.nwmUnitName || unit.unitTypeKey || `Unit ${index + 1}`}
+                                Unit {unit.nwmUnitName ?? unit.unitTypeKey ?? (index + 1)}
                               </h4>
-                              <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-                                {unit.unitTypeKey != null && unit.unitTypeKey !== '' && (
-                                  <div>
-                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Unit Type Key</dt>
-                                    <dd className="text-gray-900 dark:text-white">{formatVal(unit.unitTypeKey)}</dd>
-                                  </div>
-                                )}
-                                {unit.nwmUnitDishwasher != null && unit.nwmUnitDishwasher !== '' && (
-                                  <div>
-                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Dishwasher</dt>
-                                    <dd className="text-gray-900 dark:text-white">{formatVal(unit.nwmUnitDishwasher)}</dd>
-                                  </div>
-                                )}
-                                {unit.nwmUnitName != null && unit.nwmUnitName !== '' && (
-                                  <div>
-                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Unit Name</dt>
-                                    <dd className="text-gray-900 dark:text-white">{formatVal(unit.nwmUnitName)}</dd>
-                                  </div>
-                                )}
-                                {unit.nwmUnitRangeOven != null && unit.nwmUnitRangeOven !== '' && (
-                                  <div>
-                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Range/Oven</dt>
-                                    <dd className="text-gray-900 dark:text-white">{formatVal(unit.nwmUnitRangeOven)}</dd>
-                                  </div>
-                                )}
-                                {unit.nwmUnitRefrigerator != null && unit.nwmUnitRefrigerator !== '' && (
-                                  <div>
-                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Refrigerator</dt>
-                                    <dd className="text-gray-900 dark:text-white">{formatVal(unit.nwmUnitRefrigerator)}</dd>
-                                  </div>
-                                )}
+                              <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4">
                                 {unit.unitTypeActualRent != null && (
                                   <div>
                                     <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Actual Rent</dt>
@@ -1062,34 +931,10 @@ export default function PropertyPage() {
                                     </dd>
                                   </div>
                                 )}
-                                {unit.nwmUnitSquareFeet != null && (
+                                {unit.nwmUnitLeaseExpirationDate != null && unit.nwmUnitLeaseExpirationDate !== '' && (
                                   <div>
-                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Square Feet</dt>
-                                    <dd className="text-gray-900 dark:text-white">{formatVal(unit.nwmUnitSquareFeet)}</dd>
-                                  </div>
-                                )}
-                                {unit.nwmUnitWasherDryer != null && unit.nwmUnitWasherDryer !== '' && (
-                                  <div>
-                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Washer/Dryer</dt>
-                                    <dd className="text-gray-900 dark:text-white">{formatVal(unit.nwmUnitWasherDryer)}</dd>
-                                  </div>
-                                )}
-                                {unit.unitTypeBathsTotal != null && (
-                                  <div>
-                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Baths Total</dt>
-                                    <dd className="text-gray-900 dark:text-white">{formatVal(unit.unitTypeBathsTotal)}</dd>
-                                  </div>
-                                )}
-                                {unit.unitTypeBedsTotal != null && (
-                                  <div>
-                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Beds Total</dt>
-                                    <dd className="text-gray-900 dark:text-white">{formatVal(unit.unitTypeBedsTotal)}</dd>
-                                  </div>
-                                )}
-                                {unit.nwmUnitTenantDescription != null && unit.nwmUnitTenantDescription !== '' && (
-                                  <div className="sm:col-span-2 lg:col-span-3">
-                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Tenant Description</dt>
-                                    <dd className="text-gray-900 dark:text-white">{formatVal(unit.nwmUnitTenantDescription)}</dd>
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Lease Expiration Date</dt>
+                                    <dd className="text-gray-900 dark:text-white">{formatDate(unit.nwmUnitLeaseExpirationDate)}</dd>
                                   </div>
                                 )}
                                 {unit.nwmUnitTypeOfUse != null && unit.nwmUnitTypeOfUse !== '' && (
@@ -1098,12 +943,40 @@ export default function PropertyPage() {
                                     <dd className="text-gray-900 dark:text-white">{formatVal(unit.nwmUnitTypeOfUse)}</dd>
                                   </div>
                                 )}
-                                {unit.nwmUnitLeaseExpirationDate != null && unit.nwmUnitLeaseExpirationDate !== '' && (
+                                {unit.unitTypeBedsTotal != null && (
                                   <div>
-                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Lease Expiration Date</dt>
-                                    <dd className="text-gray-900 dark:text-white">{formatDate(unit.nwmUnitLeaseExpirationDate)}</dd>
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Beds Total</dt>
+                                    <dd className="text-gray-900 dark:text-white">{formatVal(unit.unitTypeBedsTotal)}</dd>
                                   </div>
                                 )}
+                                {unit.unitTypeBathsTotal != null && (
+                                  <div>
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Baths Total</dt>
+                                    <dd className="text-gray-900 dark:text-white">{formatVal(unit.unitTypeBathsTotal)}</dd>
+                                  </div>
+                                )}
+                                {unit.nwmUnitSquareFeet != null && (
+                                  <div>
+                                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Square Feet</dt>
+                                    <dd className="text-gray-900 dark:text-white">{formatVal(unit.nwmUnitSquareFeet)}</dd>
+                                  </div>
+                                )}
+                                {(() => {
+                                  const isTrue = (v: string | number | boolean | null | undefined) =>
+                                    v === true || v === 'true' || v === 'yes' || v === '1' || (typeof v === 'string' && v.toLowerCase() === 'true')
+                                  const appliances: string[] = []
+                                  if (isTrue(unit.nwmUnitWasherDryer)) appliances.push('Washer/Dryer')
+                                  if (isTrue(unit.nwmUnitRefrigerator)) appliances.push('Refrigerator')
+                                  if (isTrue(unit.nwmUnitRangeOven)) appliances.push('Range/Oven')
+                                  if (isTrue(unit.nwmUnitDishwasher)) appliances.push('Dishwasher')
+                                  if (appliances.length === 0) return null
+                                  return (
+                                    <div className="sm:col-span-2 lg:col-span-4">
+                                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-0.5">Appliances</dt>
+                                      <dd className="text-gray-900 dark:text-white">{appliances.join(', ')}</dd>
+                                    </div>
+                                  )
+                                })()}
                               </dl>
                             </div>
                           )
@@ -1605,6 +1478,106 @@ export default function PropertyPage() {
                           <dd className="text-gray-900 dark:text-white">{new Date(property.propertyDetails.listContractDate).toLocaleDateString()}</dd>
                         </div>
                       )}
+                      {property.propertyDetails.nwmOffersReviewDate && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">NWM Offers Review Date</dt>
+                          <dd className="text-gray-900 dark:text-white">{new Date(property.propertyDetails.nwmOffersReviewDate).toLocaleDateString()}</dd>
+                        </div>
+                      )}
+                      </dl>
+                    </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Listing Information Section */}
+                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => handleToggleSection('listingInformation')}
+                    className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                    aria-label="Toggle Listing Information section"
+                    aria-expanded={expandedSections.listingInformation}
+                  >
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Listing Information
+                    </h3>
+                    <svg
+                      className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${expandedSections.listingInformation ? 'transform rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {expandedSections.listingInformation && (
+                    <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <dl className="space-y-4">
+                      {property.propertyDetails.listingAgentFullName && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Listing Agent Name</dt>
+                          <dd className="text-gray-900 dark:text-white">{property.propertyDetails.listingAgentFullName}</dd>
+                        </div>
+                      )}
+                          {property.propertyDetails.listOfficeName && (
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Listing Office Name</dt>
+                              <dd className="text-gray-900 dark:text-white">{property.propertyDetails.listOfficeName}</dd>
+                            </div>
+                          )}
+                          {property.propertyDetails.listOfficePhone && (
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">List Office Phone</dt>
+                              <dd className="text-gray-900 dark:text-white">{property.propertyDetails.listOfficePhone}</dd>
+                            </div>
+                          )}
+                          {property.propertyDetails.onMarketDate && (
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">On Market Date</dt>
+                              <dd className="text-gray-900 dark:text-white">{new Date(property.propertyDetails.onMarketDate).toLocaleDateString()}</dd>
+                            </div>
+                          )}
+                          {property.propertyDetails.buyerBrokerageCompensationType && (
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Buyer Brokerage Compensation Type</dt>
+                              <dd className="text-gray-900 dark:text-white">{property.propertyDetails.buyerBrokerageCompensationType}</dd>
+                            </div>
+                          )}
+                          {property.propertyDetails.buyerBrokerageCompensation && (
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Buyer Brokerage Compensation</dt>
+                              <dd className="text-gray-900 dark:text-white">{property.propertyDetails.buyerBrokerageCompensation}</dd>
+                            </div>
+                          )}
+                          {property.propertyDetails.nwmSocComments && (
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">NWM SOC Comments</dt>
+                              <dd className="text-gray-900 dark:text-white">{property.propertyDetails.nwmSocComments}</dd>
+                            </div>
+                          )}
+                          {(() => {
+                            const rebate = computeAllodeRebate(property)
+                            if (rebate === null) return null
+                            return (
+                              <div>
+                                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Allode Rebate</dt>
+                                <dd className="text-gray-900 dark:text-white">~${rebate.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</dd>
+                              </div>
+                            )
+                          })()}
+                          {property.propertyDetails.listingTerms && (
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Listing Terms</dt>
+                              <dd className="text-gray-900 dark:text-white">{property.propertyDetails.listingTerms}</dd>
+                            </div>
+                          )}
+                          {property.propertyDetails.nwmOffers && (
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">NWM Offers</dt>
+                              <dd className="text-gray-900 dark:text-white">{property.propertyDetails.nwmOffers}</dd>
+                            </div>
+                          )}
                       {property.propertyDetails.nwmOffersReviewDate && (
                         <div>
                           <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">NWM Offers Review Date</dt>
