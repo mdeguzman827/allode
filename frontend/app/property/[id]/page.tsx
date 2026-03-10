@@ -8,8 +8,6 @@ import { formatBathrooms } from '@/utils/formatBathrooms'
 
 const TOUR_MESSAGE_PREFIX = (address: string) =>
   `I would like to schedule a tour for ${address} at ...`
-const DISCLOSURES_MESSAGE_PREFIX = (address: string) =>
-  `I would like to request disclosures for ${address}. `
 const OFFER_MESSAGE_PREFIX = (address: string) =>
   `I would like to make an offer for ${address}. `
 
@@ -231,7 +229,9 @@ export default function PropertyPage() {
   const tourModalRef = useRef<HTMLDivElement>(null)
 
   const [isDisclosuresModalOpen, setIsDisclosuresModalOpen] = useState(false)
-  const [disclosuresMessage, setDisclosuresMessage] = useState('')
+  const [disclosuresEmail, setDisclosuresEmail] = useState('')
+  const [disclosuresEmailError, setDisclosuresEmailError] = useState('')
+  const [disclosuresSending, setDisclosuresSending] = useState(false)
   const [disclosuresMessageSent, setDisclosuresMessageSent] = useState(false)
   const disclosuresModalRef = useRef<HTMLDivElement>(null)
 
@@ -257,8 +257,8 @@ export default function PropertyPage() {
   }
 
   const handleOpenDisclosuresModal = () => {
-    const address = property?.address?.full || ''
-    setDisclosuresMessage(DISCLOSURES_MESSAGE_PREFIX(address))
+    setDisclosuresEmail('')
+    setDisclosuresEmailError('')
     setDisclosuresMessageSent(false)
     setIsDisclosuresModalOpen(true)
   }
@@ -266,10 +266,49 @@ export default function PropertyPage() {
   const handleCloseDisclosuresModal = () => {
     setIsDisclosuresModalOpen(false)
     setDisclosuresMessageSent(false)
+    setDisclosuresEmail('')
+    setDisclosuresEmailError('')
   }
 
-  const handleSendDisclosuresMessage = () => {
-    setDisclosuresMessageSent(true)
+  const handleSendDisclosuresMessage = async () => {
+    const trimmed = disclosuresEmail.trim()
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!trimmed) {
+      setDisclosuresEmailError('Please enter your email address.')
+      return
+    }
+    if (!emailRegex.test(trimmed)) {
+      setDisclosuresEmailError('Please enter a valid email address.')
+      return
+    }
+    setDisclosuresEmailError('')
+    setDisclosuresSending(true)
+    const propertyId = Array.isArray(params.id) ? params.id[0] : params.id
+    if (!propertyId) {
+      setDisclosuresEmailError('Property not found.')
+      setDisclosuresSending(false)
+      return
+    }
+    try {
+      const response = await fetch(`/api/properties/${propertyId}/request-disclosures`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: trimmed }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        const detail = data.detail
+        const message = Array.isArray(detail) ? detail.join(' ') : detail || data.message || 'Failed to send. Please try again.'
+        setDisclosuresEmailError(message)
+        setDisclosuresSending(false)
+        return
+      }
+      setDisclosuresMessageSent(true)
+    } catch {
+      setDisclosuresEmailError('Failed to send. Please check your connection and try again.')
+    } finally {
+      setDisclosuresSending(false)
+    }
   }
 
   const handleOpenOfferModal = () => {
@@ -1776,26 +1815,37 @@ export default function PropertyPage() {
                     </svg>
                   </div>
                   <p className="text-lg font-medium text-gray-900 dark:text-white mb-1">
-                    Message sent
+                    Request received
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    We&apos;ll send the disclosures to you soon.
+                    Disclosures will be sent to <span className="font-medium text-gray-700 dark:text-gray-300">{disclosuresEmail}</span> within the next 5 minutes.
                   </p>
                 </div>
               ) : (
                 <>
-                  <label htmlFor="disclosures-message" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Message
+                  <label htmlFor="disclosures-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Email address
                   </label>
-                  <textarea
-                    id="disclosures-message"
-                    value={disclosuresMessage}
-                    onChange={(e) => setDisclosuresMessage(e.target.value)}
-                    rows={5}
+                  <input
+                    type="email"
+                    id="disclosures-email"
+                    value={disclosuresEmail}
+                    onChange={(e) => {
+                      setDisclosuresEmail(e.target.value)
+                      if (disclosuresEmailError) setDisclosuresEmailError('')
+                    }}
                     className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="I would like to request disclosures for [address]. "
-                    aria-label="Disclosures request message"
+                    placeholder="you@example.com"
+                    aria-label="Email address for disclosures"
+                    aria-invalid={!!disclosuresEmailError}
+                    aria-describedby={disclosuresEmailError ? 'disclosures-email-error' : undefined}
+                    autoComplete="email"
                   />
+                  {disclosuresEmailError && (
+                    <p id="disclosures-email-error" className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">
+                      {disclosuresEmailError}
+                    </p>
+                  )}
                 </>
               )}
             </div>
@@ -1813,17 +1863,18 @@ export default function PropertyPage() {
                   <button
                     type="button"
                     onClick={handleCloseDisclosuresModal}
-                    className="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    className="flex-1 min-w-0 px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   >
                     Close
                   </button>
                   <button
                     type="button"
                     onClick={handleSendDisclosuresMessage}
-                    className="px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
-                    aria-label="Send message"
+                    disabled={disclosuresSending}
+                    className="flex-1 min-w-0 px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                    aria-label="Request disclosures"
                   >
-                    Send message
+                    {disclosuresSending ? 'Sending…' : 'Request disclosures'}
                   </button>
                 </>
               )}

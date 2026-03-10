@@ -2,10 +2,11 @@
 FastAPI backend for property search API
 """
 import re
-from fastapi import FastAPI, Query, HTTPException, Depends
+from fastapi import FastAPI, Query, HTTPException, Depends, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from typing import Optional, List
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, nullslast, func
 import requests
@@ -43,6 +44,7 @@ from services.property_transformer import transform_for_frontend, _normalize_add
 from scripts.populate_database import populate_database
 from services.r2_storage import R2Storage
 from services.image_processor import ImageProcessor
+from services.email_sender import is_email_configured, send_disclosures_email
 
 # In-memory image cache: {cache_key: (image_data, content_type, expires_at)}
 image_cache = {}
@@ -291,6 +293,9 @@ async def get_properties(
     try:
         # Build query
         query = db.query(Property)
+
+        # Exclude properties with home type "Other"
+        query = query.filter(or_(Property.home_type.is_(None), func.lower(Property.home_type) != 'other'))
         
         # Apply filters
         if address:
@@ -762,6 +767,44 @@ async def get_property_by_id(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching property: {str(e)}")
+
+
+class RequestDisclosuresBody(BaseModel):
+    email: str
+
+
+@app.post("/api/properties/{property_id}/request-disclosures")
+async def request_disclosures(
+    property_id: str,
+    body: RequestDisclosuresBody,
+    db: Session = Depends(get_db)
+):
+    """
+    Send a disclosures email to the given address.
+    Email body: "Please see disclosures for {property_address}."
+    Requires SMTP_* and DISCLOSURES_FROM_EMAIL to be set in .env.
+    """
+    if not is_email_configured():
+        raise HTTPException(
+            status_code=503,
+            detail="Email is not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASSWORD, and DISCLOSURES_FROM_EMAIL in .env."
+        )
+    property_obj = db.query(Property).filter_by(id=property_id).first()
+    if not property_obj:
+        raise HTTPException(status_code=404, detail="Property not found")
+    address = (
+        (property_obj.unparsed_address or "").strip()
+        or f"{property_obj.street_number or ''} {property_obj.street_name or ''}".strip()
+        or f"{property_obj.city or ''}, {property_obj.state_or_province or ''} {property_obj.postal_code or ''}".strip()
+    ).strip() or "this property"
+    to_email = (body.email or "").strip().lower()
+    if not to_email or "@" not in to_email:
+        raise HTTPException(status_code=400, detail="Valid email is required")
+    try:
+        send_disclosures_email(to_email=to_email, property_address=address)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+    return {"success": True, "message": "Disclosures email sent."}
 
 
 @app.post("/api/properties/{property_id}/process-images")
