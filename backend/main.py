@@ -880,8 +880,9 @@ class CoBuyerBody(BaseModel):
 
 
 class SubmitOfferBody(BaseModel):
-    first_name: str
-    last_name: str
+    first_name: str = ""
+    last_name: str = ""
+    entity_name: str = ""
     email: str
     phone: str
     status: str
@@ -889,7 +890,10 @@ class SubmitOfferBody(BaseModel):
     purchase_price: str
     purchase_price_reasoning: str = ""
     earnest_money: str
+    earnest_money_non_refundable: bool = False
     escalation_clause: str
+    escalation_amount: str = ""
+    max_purchase_price: str = ""
     offer_expiration: str
     closing_date: str
     contingency_labels: List[str] = []
@@ -926,6 +930,7 @@ async def submit_offer(
             listing_id=listing_id,
             first_name=(body.first_name or "").strip(),
             last_name=(body.last_name or "").strip(),
+            entity_name=(body.entity_name or "").strip(),
             email=(body.email or "").strip(),
             phone=(body.phone or "").strip(),
             status=(body.status or "").strip(),
@@ -942,7 +947,10 @@ async def submit_offer(
             purchase_price=(body.purchase_price or "").strip(),
             purchase_price_reasoning=(body.purchase_price_reasoning or "").strip(),
             earnest_money=(body.earnest_money or "").strip(),
+            earnest_money_non_refundable=body.earnest_money_non_refundable,
             escalation_clause=(body.escalation_clause or "").strip(),
+            escalation_amount=(body.escalation_amount or "").strip(),
+            max_purchase_price=(body.max_purchase_price or "").strip(),
             offer_expiration=(body.offer_expiration or "").strip(),
             closing_date=(body.closing_date or "").strip(),
             contingency_labels=body.contingency_labels or [],

@@ -103,8 +103,9 @@ def send_offer_email(
     property_address: str,
     *,
     listing_id: str = "",
-    first_name: str,
-    last_name: str,
+    first_name: str = "",
+    last_name: str = "",
+    entity_name: str = "",
     email: str,
     phone: str,
     status: str,
@@ -112,7 +113,10 @@ def send_offer_email(
     purchase_price: str,
     purchase_price_reasoning: str,
     earnest_money: str,
+    earnest_money_non_refundable: bool = False,
     escalation_clause: str,
+    escalation_amount: str = "",
+    max_purchase_price: str = "",
     offer_expiration: str,
     closing_date: str,
     contingency_labels: list[str],
@@ -145,22 +149,33 @@ Phone: {co_buyer.get('phone', '')}
     listing_line = f"Listing ID: {(listing_id or '').strip()}" if (listing_id or "").strip() else ""
     property_block = f"Address: {property_address}" + (f"\n{listing_line}" if listing_line else "")
 
+    name_block = ""
+    if (entity_name or "").strip():
+        name_block = f"Entity name: {(entity_name or '').strip()}\n"
+    else:
+        name_block = f"First name: {first_name or ''}\nLast name: {last_name or ''}\n"
+
     body = f"""New offer submission
 
 PROPERTY
 {property_block}
 
 PERSONAL INFORMATION
-First name: {first_name}
-Last name: {last_name}
-Email: {email}
-Phone: {phone}
-Status: {status}{co_buyer_block}
+Status of Buyer(s): {status}
+{name_block}Email: {email}
+Phone: {phone}{co_buyer_block}
 
 OFFER DETAILS
 Purchase price: {purchase_price}
 Earnest money deposit: {earnest_money}
-Escalation clause: {escalation_clause}
+Earnest money non-refundable: {"Yes" if earnest_money_non_refundable else "No"}
+Escalation clause: {escalation_clause}"""
+    if (escalation_clause or "").strip().lower() == "yes" and (escalation_amount or max_purchase_price):
+        body += f"""
+Escalation amount: {escalation_amount or "—"}
+Maximum purchase price: {max_purchase_price or "—"}
+"""
+    body += f"""
 Offer expiration: {offer_expiration}
 Closing date: {closing_date}{reasoning_block}
 
