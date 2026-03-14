@@ -44,7 +44,7 @@ from services.property_transformer import transform_for_frontend, _normalize_add
 from scripts.populate_database import populate_database
 from services.r2_storage import R2Storage
 from services.image_processor import ImageProcessor
-from services.email_sender import is_email_configured, send_disclosures_email, send_tour_request_email
+from services.email_sender import is_email_configured, send_disclosures_email, send_tour_request_email, send_offer_email
 
 # In-memory image cache: {cache_key: (image_data, content_type, expires_at)}
 image_cache = {}
@@ -810,6 +810,7 @@ async def request_disclosures(
 class RequestScheduleTourBody(BaseModel):
     date: str  # YYYY-MM-DD
     time: str  # HH:MM (24h)
+    email: str
 
 
 def _format_tour_date_display(date_str: str) -> str:
@@ -854,13 +855,102 @@ async def schedule_tour(
         or f"{property_obj.street_number or ''} {property_obj.street_name or ''}".strip()
         or f"{property_obj.city or ''}, {property_obj.state_or_province or ''} {property_obj.postal_code or ''}".strip()
     ).strip() or "this property"
+    to_email = (body.email or "").strip().lower()
+    if not to_email or "@" not in to_email:
+        raise HTTPException(status_code=400, detail="Valid email is required")
     date_display = _format_tour_date_display(body.date)
     time_display = _format_tour_time_display(body.time)
     try:
-        send_tour_request_email(property_address=address, date_display=date_display, time_display=time_display)
+        send_tour_request_email(
+            property_address=address,
+            date_display=date_display,
+            time_display=time_display,
+            contact_email=to_email,
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
     return {"success": True, "message": "Tour request sent."}
+
+
+class CoBuyerBody(BaseModel):
+    first_name: str
+    last_name: str
+    email: str
+    phone: str
+
+
+class SubmitOfferBody(BaseModel):
+    first_name: str
+    last_name: str
+    email: str
+    phone: str
+    status: str
+    co_buyer: Optional[CoBuyerBody] = None
+    purchase_price: str
+    purchase_price_reasoning: str = ""
+    earnest_money: str
+    escalation_clause: str
+    offer_expiration: str
+    closing_date: str
+    contingency_labels: List[str] = []
+    special_requests: str = ""
+
+
+@app.post("/api/properties/{property_id}/submit-offer")
+async def submit_offer(
+    property_id: str,
+    body: SubmitOfferBody,
+    db: Session = Depends(get_db),
+):
+    """
+    Send offer form details to allodeinc@gmail.com via send_offer_email.
+    """
+    if not is_email_configured():
+        raise HTTPException(
+            status_code=503,
+            detail="Email is not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASSWORD, and DISCLOSURES_FROM_EMAIL in .env.",
+        )
+    property_obj = db.query(Property).filter_by(id=property_id).first()
+    if not property_obj:
+        raise HTTPException(status_code=404, detail="Property not found")
+    address = (
+        (property_obj.unparsed_address or "").strip()
+        or f"{property_obj.street_number or ''} {property_obj.street_name or ''}".strip()
+        or f"{property_obj.city or ''}, {property_obj.state_or_province or ''} {property_obj.postal_code or ''}".strip()
+    ).strip() or "this property"
+    co_buyer = body.co_buyer
+    listing_id = (getattr(property_obj, "listing_id", None) or "").strip()
+    try:
+        send_offer_email(
+            property_address=address,
+            listing_id=listing_id,
+            first_name=(body.first_name or "").strip(),
+            last_name=(body.last_name or "").strip(),
+            email=(body.email or "").strip(),
+            phone=(body.phone or "").strip(),
+            status=(body.status or "").strip(),
+            co_buyer=(
+                {
+                    "first_name": (co_buyer.first_name or "").strip(),
+                    "last_name": (co_buyer.last_name or "").strip(),
+                    "email": (co_buyer.email or "").strip(),
+                    "phone": (co_buyer.phone or "").strip(),
+                }
+                if co_buyer
+                else None
+            ),
+            purchase_price=(body.purchase_price or "").strip(),
+            purchase_price_reasoning=(body.purchase_price_reasoning or "").strip(),
+            earnest_money=(body.earnest_money or "").strip(),
+            escalation_clause=(body.escalation_clause or "").strip(),
+            offer_expiration=(body.offer_expiration or "").strip(),
+            closing_date=(body.closing_date or "").strip(),
+            contingency_labels=body.contingency_labels or [],
+            special_requests=(body.special_requests or "").strip(),
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+    return {"success": True, "message": "Offer submitted."}
 
 
 @app.post("/api/properties/{property_id}/process-images")

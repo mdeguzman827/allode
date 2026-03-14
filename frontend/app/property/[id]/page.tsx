@@ -9,6 +9,43 @@ import { formatBathrooms } from '@/utils/formatBathrooms'
 const OFFER_MESSAGE_PREFIX = (address: string) =>
   `I would like to make an offer for ${address}. `
 
+const OFFER_STATUS_OPTIONS = [
+  { value: '', label: 'Select status…' },
+  { value: 'limited-liability-partnership', label: 'A Limited Liability Partnership' },
+  { value: 'limited-liability-company', label: 'A Limited Liability Company' },
+  { value: 'general-partnership', label: 'A General Partnership' },
+  { value: 'corporation', label: 'A Corporation' },
+  { value: 'unmarried-persons', label: 'Unmarried Persons' },
+  { value: 'unmarried-person', label: 'An Unmarried Person' },
+  { value: 'married-separate-property', label: 'Married as Separate Property' },
+  { value: 'married-couple', label: 'A Married Couple' },
+  { value: 'domestic-partners', label: 'Domestic Partners' },
+] as const
+
+const OFFER_ESCALATION_OPTIONS = [
+  { value: '', label: 'Select…' },
+  { value: 'yes', label: 'Yes' },
+  { value: 'no', label: 'No' },
+] as const
+
+const formatCurrencyInput = (raw: string): string => {
+  const digits = raw.replace(/\D/g, '')
+  if (digits === '') return ''
+  const num = parseInt(digits, 10)
+  if (Number.isNaN(num)) return ''
+  return '$' + num.toLocaleString('en-US')
+}
+
+type ContingencyId = string
+const OFFER_CONTINGENCIES: { id: ContingencyId; label: string; description: string }[] = [
+  { id: 'inspection', label: 'Inspection', description: 'Allows you to conduct inspections and request repairs or back out based on findings.' },
+  { id: 'financing', label: 'Financing', description: 'Offer depends on obtaining a mortgage; if financing falls through, you can exit the contract.' },
+  { id: 'appraisal', label: 'Appraisal', description: 'If the property appraises below the sale price, you can renegotiate or withdraw.' },
+  { id: 'sale-of-home', label: 'Sale of home', description: "Your purchase depends on selling your current home by a specified date." },
+  { id: 'title', label: 'Title', description: 'You can back out if title issues or liens are discovered.' },
+  { id: 'hoa', label: 'HOA / Document review', description: 'Time to review HOA documents, rules, financials, and covenants.' },
+]
+
 const TOUR_PST = 'America/Los_Angeles'
 
 const getPSTDateString = (d: Date): string =>
@@ -298,6 +335,7 @@ export default function PropertyPage() {
   const [isTourModalOpen, setIsTourModalOpen] = useState(false)
   const [tourDate, setTourDate] = useState('')
   const [tourTime, setTourTime] = useState('')
+  const [tourEmail, setTourEmail] = useState('')
   const [tourMessageSent, setTourMessageSent] = useState(false)
   const [tourSending, setTourSending] = useState(false)
   const [tourError, setTourError] = useState<string | null>(null)
@@ -311,8 +349,32 @@ export default function PropertyPage() {
   const disclosuresModalRef = useRef<HTMLDivElement>(null)
 
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false)
-  const [offerMessage, setOfferMessage] = useState('')
+  const [offerStep, setOfferStep] = useState(1)
   const [offerMessageSent, setOfferMessageSent] = useState(false)
+  const [offerSending, setOfferSending] = useState(false)
+  const [offerError, setOfferError] = useState<string | null>(null)
+  // Step 1
+  const [offerFirstName, setOfferFirstName] = useState('')
+  const [offerLastName, setOfferLastName] = useState('')
+  const [offerEmail, setOfferEmail] = useState('')
+  const [offerPhone, setOfferPhone] = useState('')
+  const [offerStatus, setOfferStatus] = useState('')
+  const [offerHasCoBuyer, setOfferHasCoBuyer] = useState(false)
+  const [offerCoBuyerFirstName, setOfferCoBuyerFirstName] = useState('')
+  const [offerCoBuyerLastName, setOfferCoBuyerLastName] = useState('')
+  const [offerCoBuyerEmail, setOfferCoBuyerEmail] = useState('')
+  const [offerCoBuyerPhone, setOfferCoBuyerPhone] = useState('')
+  // Step 2
+  const [offerPurchasePrice, setOfferPurchasePrice] = useState('')
+  const [offerPurchasePriceReasoning, setOfferPurchasePriceReasoning] = useState('')
+  const [offerEarnestMoney, setOfferEarnestMoney] = useState('')
+  const [offerEscalationClause, setOfferEscalationClause] = useState('')
+  const [offerExpiration, setOfferExpiration] = useState('')
+  const [offerClosingDate, setOfferClosingDate] = useState('')
+  // Step 3
+  const [offerContingencies, setOfferContingencies] = useState<ContingencyId[]>([])
+  // Step 4
+  const [offerSpecialRequests, setOfferSpecialRequests] = useState('')
   const offerModalRef = useRef<HTMLDivElement>(null)
 
   const handleOpenTourModal = () => {
@@ -321,6 +383,7 @@ export default function PropertyPage() {
     const slots = getAvailableTourTimeSlots(firstDate)
     setTourDate(firstDate)
     setTourTime(slots[0] ?? '09:00')
+    setTourEmail('')
     setTourMessageSent(false)
     setTourError(null)
     setIsTourModalOpen(true)
@@ -340,14 +403,19 @@ export default function PropertyPage() {
 
   const handleSendTourMessage = async () => {
     const propertyId = Array.isArray(params.id) ? params.id[0] : params.id
+    const trimmedEmail = tourEmail.trim()
     if (!propertyId || !tourDate || !tourTime) return
+    if (!trimmedEmail || !trimmedEmail.includes('@')) {
+      setTourError('Please enter a valid email address.')
+      return
+    }
     setTourError(null)
     setTourSending(true)
     try {
       const response = await fetch(`/api/properties/${propertyId}/schedule-tour`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: tourDate, time: tourTime }),
+        body: JSON.stringify({ date: tourDate, time: tourTime, email: trimmedEmail }),
       })
       const data = await response.json().catch(() => ({}))
       if (!response.ok) {
@@ -418,19 +486,185 @@ export default function PropertyPage() {
   }
 
   const handleOpenOfferModal = () => {
-    const address = property?.address?.full || ''
-    setOfferMessage(OFFER_MESSAGE_PREFIX(address))
+    setOfferStep(1)
     setOfferMessageSent(false)
+    setOfferError(null)
+    setOfferFirstName('')
+    setOfferLastName('')
+    setOfferEmail('')
+    setOfferPhone('')
+    setOfferStatus('')
+    setOfferPurchasePrice('')
+    setOfferPurchasePriceReasoning('')
+    setOfferEarnestMoney('')
+    setOfferEscalationClause('')
+    setOfferExpiration('')
+    setOfferClosingDate('')
+    setOfferContingencies([])
+    setOfferSpecialRequests('')
+    setOfferHasCoBuyer(false)
+    setOfferCoBuyerFirstName('')
+    setOfferCoBuyerLastName('')
+    setOfferCoBuyerEmail('')
+    setOfferCoBuyerPhone('')
     setIsOfferModalOpen(true)
   }
 
   const handleCloseOfferModal = () => {
     setIsOfferModalOpen(false)
     setOfferMessageSent(false)
+    setOfferError(null)
   }
 
-  const handleSendOfferMessage = () => {
-    setOfferMessageSent(true)
+  const handleOfferContingencyToggle = (id: ContingencyId) => {
+    setOfferContingencies((prev) =>
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
+    )
+  }
+
+  const validateOfferStep1 = (): boolean => {
+    const first = offerFirstName.trim()
+    const last = offerLastName.trim()
+    const email = offerEmail.trim()
+    if (!first) {
+      setOfferError('Please enter your first name.')
+      return false
+    }
+    if (!last) {
+      setOfferError('Please enter your last name.')
+      return false
+    }
+    if (!email || !email.includes('@')) {
+      setOfferError('Please enter a valid email address.')
+      return false
+    }
+    if (!offerPhone.trim()) {
+      setOfferError('Please enter your phone number.')
+      return false
+    }
+    if (!offerStatus) {
+      setOfferError('Please select your status.')
+      return false
+    }
+    if (offerHasCoBuyer) {
+      if (!offerCoBuyerFirstName.trim()) {
+        setOfferError('Please enter the co-buyer\'s first name.')
+        return false
+      }
+      if (!offerCoBuyerLastName.trim()) {
+        setOfferError('Please enter the co-buyer\'s last name.')
+        return false
+      }
+      if (!offerCoBuyerEmail.trim() || !offerCoBuyerEmail.includes('@')) {
+        setOfferError('Please enter a valid email address for the co-buyer.')
+        return false
+      }
+      if (!offerCoBuyerPhone.trim()) {
+        setOfferError('Please enter the co-buyer\'s phone number.')
+        return false
+      }
+    }
+    setOfferError(null)
+    return true
+  }
+
+  const validateOfferStep2 = (): boolean => {
+    if (!offerPurchasePrice.trim()) {
+      setOfferError('Please enter the purchase price.')
+      return false
+    }
+    const price = Number(offerPurchasePrice.replace(/\D/g, ''))
+    if (!Number.isFinite(price) || price <= 0) {
+      setOfferError('Please enter a valid purchase price.')
+      return false
+    }
+    if (!offerEarnestMoney.trim()) {
+      setOfferError('Please enter the earnest money deposit.')
+      return false
+    }
+    const earnestNum = Number(offerEarnestMoney.replace(/\D/g, ''))
+    if (!Number.isFinite(earnestNum) || earnestNum <= 0) {
+      setOfferError('Please enter a valid earnest money deposit.')
+      return false
+    }
+    if (!offerEscalationClause) {
+      setOfferError('Please select whether you have an escalation clause.')
+      return false
+    }
+    if (!offerExpiration.trim()) {
+      setOfferError('Please select the offer expiration date.')
+      return false
+    }
+    if (!offerClosingDate.trim()) {
+      setOfferError('Please select the closing date.')
+      return false
+    }
+    setOfferError(null)
+    return true
+  }
+
+  const handleOfferNext = () => {
+    if (offerStep === 1 && !validateOfferStep1()) return
+    if (offerStep === 2 && !validateOfferStep2()) return
+    setOfferError(null)
+    setOfferStep((s) => Math.min(4, s + 1))
+  }
+
+  const handleOfferBack = () => {
+    setOfferError(null)
+    setOfferStep((s) => Math.max(1, s - 1))
+  }
+
+  const handleSubmitOffer = async () => {
+    const propertyId = Array.isArray(params.id) ? params.id[0] : params.id
+    if (!propertyId) {
+      setOfferError('Property not found.')
+      return
+    }
+    setOfferError(null)
+    setOfferSending(true)
+    const contingencyLabels = offerContingencies.map(
+      (id) => OFFER_CONTINGENCIES.find((c) => c.id === id)?.label ?? id
+    )
+    try {
+      const response = await fetch(`/api/properties/${propertyId}/submit-offer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          first_name: offerFirstName.trim(),
+          last_name: offerLastName.trim(),
+          email: offerEmail.trim(),
+          phone: offerPhone.trim(),
+          status: offerStatus,
+          co_buyer: offerHasCoBuyer
+            ? {
+                first_name: offerCoBuyerFirstName.trim(),
+                last_name: offerCoBuyerLastName.trim(),
+                email: offerCoBuyerEmail.trim(),
+                phone: offerCoBuyerPhone.trim(),
+              }
+            : undefined,
+          purchase_price: offerPurchasePrice.trim(),
+          purchase_price_reasoning: offerPurchasePriceReasoning.trim(),
+          earnest_money: offerEarnestMoney.trim(),
+          escalation_clause: offerEscalationClause,
+          offer_expiration: offerExpiration,
+          closing_date: offerClosingDate,
+          contingency_labels: contingencyLabels,
+          special_requests: offerSpecialRequests.trim(),
+        }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        setOfferError(data.detail ?? 'Something went wrong. Please try again.')
+        return
+      }
+      setOfferMessageSent(true)
+    } catch {
+      setOfferError('Unable to send. Please try again.')
+    } finally {
+      setOfferSending(false)
+    }
   }
 
   const handleTourModalKeyDown = (e: React.KeyboardEvent) => {
@@ -1898,6 +2132,19 @@ export default function PropertyPage() {
                       )
                     })}
                   </select>
+                  <label htmlFor="tour-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mt-4 mb-2">
+                    Email
+                  </label>
+                  <input
+                    id="tour-email"
+                    type="email"
+                    value={tourEmail}
+                    onChange={(e) => setTourEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    aria-label="Your email address"
+                    autoComplete="email"
+                  />
                   {tourError && (
                     <p className="mt-3 text-sm text-red-600 dark:text-red-400" role="alert">
                       {tourError}
@@ -2062,10 +2309,10 @@ export default function PropertyPage() {
         >
           <div
             ref={offerModalRef}
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg border border-gray-200 dark:border-gray-700"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-2xl border border-gray-200 dark:border-gray-700 max-h-[90vh] flex flex-col"
             tabIndex={-1}
           >
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
               <h2 id="offer-modal-title" className="text-lg font-semibold text-gray-900 dark:text-white">
                 Make an Offer
               </h2>
@@ -2080,71 +2327,439 @@ export default function PropertyPage() {
                 </svg>
               </button>
             </div>
-            <div className="p-4">
-              {offerMessageSent ? (
-                <div
-                  className="flex flex-col items-center justify-center py-8 text-center"
-                  role="status"
-                  aria-live="polite"
-                >
-                  <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
-                    <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <p className="text-lg font-medium text-gray-900 dark:text-white mb-1">
-                    Message sent
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    We&apos;ll be in touch soon regarding your offer.
-                  </p>
+
+            {offerMessageSent ? (
+              <div
+                className="flex flex-col items-center justify-center py-12 text-center px-4"
+                role="status"
+                aria-live="polite"
+              >
+                <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
+                  <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
                 </div>
-              ) : (
-                <>
-                  <label htmlFor="offer-message" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Message
-                  </label>
-                  <textarea
-                    id="offer-message"
-                    value={offerMessage}
-                    onChange={(e) => setOfferMessage(e.target.value)}
-                    rows={5}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="I would like to make an offer for [address]. "
-                    aria-label="Offer message"
-                  />
-                </>
-              )}
-            </div>
-            <div className="flex justify-end gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
-              {offerMessageSent ? (
-                <button
-                  type="button"
-                  onClick={handleCloseOfferModal}
-                  className="px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
-                >
-                  Close
-                </button>
-              ) : (
-                <>
+                <p className="text-lg font-medium text-gray-900 dark:text-white mb-1">
+                  Offer submitted
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  We&apos;ll be in touch soon regarding your offer.
+                </p>
+                <div className="mt-6">
                   <button
                     type="button"
                     onClick={handleCloseOfferModal}
-                    className="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    className="px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
                   >
                     Close
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleSendOfferMessage}
-                    className="px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
-                    aria-label="Send message"
-                  >
-                    Send message
-                  </button>
-                </>
-              )}
-            </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Step indicator */}
+                <div className="flex items-center justify-center gap-2 px-4 pt-4 flex-shrink-0" aria-label={`Step ${offerStep} of 4`}>
+                  {[1, 2, 3, 4].map((step) => (
+                    <span
+                      key={step}
+                      className={`h-2 rounded-full transition-all ${
+                        step === offerStep
+                          ? 'w-8 bg-teal-600 dark:bg-teal-500'
+                          : step < offerStep
+                            ? 'w-2 bg-teal-400 dark:bg-teal-600'
+                            : 'w-2 bg-gray-200 dark:bg-gray-600'
+                      }`}
+                      aria-hidden
+                    />
+                  ))}
+                </div>
+
+                <div className="p-4 overflow-y-auto flex-1 min-h-0">
+                  {offerStep === 1 && (
+                    <div className="space-y-4">
+                      <h3 className="text-base font-medium text-gray-900 dark:text-white">Personal Information</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="offer-first-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            First Name
+                          </label>
+                          <input
+                            id="offer-first-name"
+                            type="text"
+                            value={offerFirstName}
+                            onChange={(e) => setOfferFirstName(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                            placeholder="First name"
+                            aria-required="true"
+                            autoComplete="given-name"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="offer-last-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Last Name
+                          </label>
+                          <input
+                            id="offer-last-name"
+                            type="text"
+                            value={offerLastName}
+                            onChange={(e) => setOfferLastName(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                            placeholder="Last name"
+                            aria-required="true"
+                            autoComplete="family-name"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label htmlFor="offer-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Email
+                        </label>
+                        <input
+                          id="offer-email"
+                          type="email"
+                          value={offerEmail}
+                          onChange={(e) => setOfferEmail(e.target.value)}
+                          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                          placeholder="you@example.com"
+                          aria-required="true"
+                          autoComplete="email"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="offer-phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Phone Number
+                        </label>
+                        <input
+                          id="offer-phone"
+                          type="tel"
+                          value={offerPhone}
+                          onChange={(e) => setOfferPhone(e.target.value)}
+                          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                          placeholder="(555) 123-4567"
+                          aria-required="true"
+                          autoComplete="tel"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="offer-status" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Status
+                        </label>
+                        <select
+                          id="offer-status"
+                          value={offerStatus}
+                          onChange={(e) => setOfferStatus(e.target.value)}
+                          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                          aria-required="true"
+                        >
+                          {OFFER_STATUS_OPTIONS.map((opt) => (
+                            <option key={opt.value || 'empty'} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Co-buyer optional section */}
+                      <div className="border-t border-gray-200 dark:border-gray-600 pt-4 mt-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={offerHasCoBuyer}
+                            onChange={(e) => setOfferHasCoBuyer(e.target.checked)}
+                            className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-teal-600 focus:ring-teal-500"
+                            aria-label="Add co-buyer"
+                          />
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Add co-buyer
+                          </span>
+                        </label>
+                        {offerHasCoBuyer && (
+                          <div className="mt-4 space-y-4 pl-6 border-l-2 border-teal-200 dark:border-teal-800">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              Co-buyer information
+                            </p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <div>
+                                <label htmlFor="offer-cobuyer-first-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                  First Name
+                                </label>
+                                <input
+                                  id="offer-cobuyer-first-name"
+                                  type="text"
+                                  value={offerCoBuyerFirstName}
+                                  onChange={(e) => setOfferCoBuyerFirstName(e.target.value)}
+                                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                                  placeholder="First name"
+                                  autoComplete="off"
+                                />
+                              </div>
+                              <div>
+                                <label htmlFor="offer-cobuyer-last-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                  Last Name
+                                </label>
+                                <input
+                                  id="offer-cobuyer-last-name"
+                                  type="text"
+                                  value={offerCoBuyerLastName}
+                                  onChange={(e) => setOfferCoBuyerLastName(e.target.value)}
+                                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                                  placeholder="Last name"
+                                  autoComplete="off"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label htmlFor="offer-cobuyer-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Email
+                              </label>
+                              <input
+                                id="offer-cobuyer-email"
+                                type="email"
+                                value={offerCoBuyerEmail}
+                                onChange={(e) => setOfferCoBuyerEmail(e.target.value)}
+                                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                                placeholder="co-buyer@example.com"
+                                autoComplete="off"
+                              />
+                            </div>
+                            <div>
+                              <label htmlFor="offer-cobuyer-phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Phone Number
+                              </label>
+                              <input
+                                id="offer-cobuyer-phone"
+                                type="tel"
+                                value={offerCoBuyerPhone}
+                                onChange={(e) => setOfferCoBuyerPhone(e.target.value)}
+                                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                                placeholder="(555) 123-4567"
+                                autoComplete="off"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {offerStep === 2 && (
+                    <div className="space-y-4">
+                      <h3 className="text-base font-medium text-gray-900 dark:text-white">Offer Details</h3>
+                      <div>
+                        <label htmlFor="offer-purchase-price" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Purchase Price
+                        </label>
+                        <input
+                          id="offer-purchase-price"
+                          type="text"
+                          inputMode="numeric"
+                          value={offerPurchasePrice}
+                          onChange={(e) => setOfferPurchasePrice(formatCurrencyInput(e.target.value))}
+                          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                          placeholder="$4,950,000"
+                          aria-required="true"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="offer-price-reasoning" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Reasoning behind purchase price <span className="text-gray-500 dark:text-gray-400 font-normal">(optional)</span>
+                        </label>
+                        <textarea
+                          id="offer-price-reasoning"
+                          value={offerPurchasePriceReasoning}
+                          onChange={(e) => setOfferPurchasePriceReasoning(e.target.value)}
+                          rows={2}
+                          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                          placeholder="Brief explanation if desired"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="offer-earnest" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Earnest Money Deposit
+                        </label>
+                        <input
+                          id="offer-earnest"
+                          type="text"
+                          inputMode="numeric"
+                          value={offerEarnestMoney}
+                          onChange={(e) => setOfferEarnestMoney(formatCurrencyInput(e.target.value))}
+                          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                          placeholder="$10,000"
+                          aria-required="true"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="offer-escalation" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Escalation Clause
+                        </label>
+                        <select
+                          id="offer-escalation"
+                          value={offerEscalationClause}
+                          onChange={(e) => setOfferEscalationClause(e.target.value)}
+                          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                          aria-required="true"
+                        >
+                          {OFFER_ESCALATION_OPTIONS.map((opt) => (
+                            <option key={opt.value || 'empty'} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="offer-expiration" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Offer Expiration
+                          </label>
+                          <input
+                            id="offer-expiration"
+                            type="date"
+                            value={offerExpiration}
+                            onChange={(e) => setOfferExpiration(e.target.value)}
+                            min={new Date().toISOString().slice(0, 10)}
+                            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                            aria-required="true"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="offer-closing" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Closing Date
+                          </label>
+                          <input
+                            id="offer-closing"
+                            type="date"
+                            value={offerClosingDate}
+                            onChange={(e) => setOfferClosingDate(e.target.value)}
+                            min={new Date().toISOString().slice(0, 10)}
+                            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                            aria-required="true"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {offerStep === 3 && (
+                    <div className="space-y-4">
+                      <h3 className="text-base font-medium text-gray-900 dark:text-white">Contingencies</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Select any contingencies that apply to your offer. You can select multiple.
+                      </p>
+                      <div className="space-y-3">
+                        {OFFER_CONTINGENCIES.map((c) => {
+                          const isSelected = offerContingencies.includes(c.id)
+                          return (
+                            <div
+                              key={c.id}
+                              className={`rounded-lg border-2 p-4 transition-colors cursor-pointer ${
+                                isSelected
+                                  ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20 dark:border-teal-400'
+                                  : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                              }`}
+                              onClick={() => handleOfferContingencyToggle(c.id)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault()
+                                  handleOfferContingencyToggle(c.id)
+                                }
+                              }}
+                              role="button"
+                              tabIndex={0}
+                              aria-pressed={isSelected}
+                              aria-label={`${c.label}: ${c.description}`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <span
+                                  className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center mt-0.5 ${
+                                    isSelected ? 'border-teal-600 bg-teal-600' : 'border-gray-400 dark:border-gray-500'
+                                  }`}
+                                  aria-hidden
+                                >
+                                  {isSelected && (
+                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  )}
+                                </span>
+                                <div>
+                                  <span className="font-medium text-gray-900 dark:text-white">{c.label}</span>
+                                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{c.description}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {offerStep === 4 && (
+                    <div className="space-y-4">
+                      <h3 className="text-base font-medium text-gray-900 dark:text-white">Special Requests</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Add any special requests or notes for your offer.
+                      </p>
+                      <textarea
+                        id="offer-special-requests"
+                        value={offerSpecialRequests}
+                        onChange={(e) => setOfferSpecialRequests(e.target.value)}
+                        rows={5}
+                        className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                        placeholder="e.g. include appliances, preferred closing timeline, questions for the seller…"
+                        aria-label="Special requests"
+                      />
+                    </div>
+                  )}
+
+                  {offerError && (
+                    <p className="mt-3 text-sm text-red-600 dark:text-red-400" role="alert">
+                      {offerError}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex justify-between gap-2 p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+                  <div className="flex gap-2">
+                    {offerStep > 1 ? (
+                      <button
+                        type="button"
+                        onClick={handleOfferBack}
+                        className="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        Back
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleCloseOfferModal}
+                        className="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        Close
+                      </button>
+                    )}
+                  </div>
+                  {offerStep < 4 ? (
+                    <button
+                      type="button"
+                      onClick={handleOfferNext}
+                      className="px-4 py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-medium transition-colors"
+                    >
+                      Next
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleSubmitOffer}
+                      disabled={offerSending}
+                      className="px-4 py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-label="Submit offer"
+                    >
+                      {offerSending ? 'Submitting…' : 'Submit offer'}
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
