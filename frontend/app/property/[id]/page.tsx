@@ -6,10 +6,82 @@ import Link from 'next/link'
 import PropertyImageCarousel from '@/components/PropertyImageCarousel'
 import { formatBathrooms } from '@/utils/formatBathrooms'
 
-const TOUR_MESSAGE_PREFIX = (address: string) =>
-  `I would like to schedule a tour for ${address} at ...`
 const OFFER_MESSAGE_PREFIX = (address: string) =>
   `I would like to make an offer for ${address}. `
+
+const TOUR_PST = 'America/Los_Angeles'
+
+const getPSTDateString = (d: Date): string =>
+  d.toLocaleDateString('en-CA', { timeZone: TOUR_PST })
+
+const getPSTTime = (d: Date): { hours: number; minutes: number } => {
+  const s = d.toLocaleTimeString('en-US', {
+    timeZone: TOUR_PST,
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+  const [h, m] = s.split(':').map(Number)
+  return { hours: h ?? 0, minutes: m ?? 0 }
+}
+
+const getAvailableTourDates = (): string[] => {
+  const out: string[] = []
+  let t = new Date()
+  const maxDaysToCheck = 30
+  for (let i = 0; i < maxDaysToCheck && out.length < 5; i++) {
+    const dateStr = getPSTDateString(t)
+    if (getAvailableTourTimeSlots(dateStr).length > 0) {
+      out.push(dateStr)
+    }
+    t = new Date(t.getTime() + 24 * 60 * 60 * 1000)
+  }
+  return out
+}
+
+const getAvailableTourTimeSlots = (dateString: string): string[] => {
+  const now = new Date()
+  const todayPST = getPSTDateString(now)
+  const { hours, minutes } = getPSTTime(now)
+  const currentMinutes = hours * 60 + minutes
+  let startMinutes = 9 * 60 // 9am
+  if (dateString === todayPST) {
+    const twoHoursLater = currentMinutes + 120
+    const roundedUp = Math.ceil(twoHoursLater / 30) * 30
+    startMinutes = Math.max(9 * 60, roundedUp)
+  }
+  const endMinutes = 21 * 60 // 9pm
+  const slots: string[] = []
+  for (let m = startMinutes; m <= endMinutes; m += 30) {
+    const h = Math.floor(m / 60)
+    const min = m % 60
+    slots.push(`${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`)
+  }
+  return slots
+}
+
+const formatTourDateLabel = (dateString: string): string => {
+  const todayPST = getPSTDateString(new Date())
+  const [y, mo, d] = dateString.split('-').map(Number)
+  const date = new Date(Date.UTC(y, mo - 1, d, 12, 0, 0))
+  const label = date.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: TOUR_PST,
+  })
+  return dateString === todayPST ? `${label} (Today)` : label
+}
+
+type TourDateCardParts = { weekday: string; day: number; month: string }
+const getTourDateCardParts = (dateString: string): TourDateCardParts => {
+  const [y, mo, d] = dateString.split('-').map(Number)
+  const date = new Date(Date.UTC(y, mo - 1, d, 12, 0, 0))
+  const weekday = date.toLocaleDateString('en-US', { weekday: 'short', timeZone: TOUR_PST }).toUpperCase()
+  const month = date.toLocaleDateString('en-US', { month: 'short', timeZone: TOUR_PST }).toUpperCase()
+  return { weekday, day: d, month }
+}
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -224,8 +296,11 @@ export default function PropertyPage() {
     unitTypes: false,
   })
   const [isTourModalOpen, setIsTourModalOpen] = useState(false)
-  const [tourMessage, setTourMessage] = useState('')
+  const [tourDate, setTourDate] = useState('')
+  const [tourTime, setTourTime] = useState('')
   const [tourMessageSent, setTourMessageSent] = useState(false)
+  const [tourSending, setTourSending] = useState(false)
+  const [tourError, setTourError] = useState<string | null>(null)
   const tourModalRef = useRef<HTMLDivElement>(null)
 
   const [isDisclosuresModalOpen, setIsDisclosuresModalOpen] = useState(false)
@@ -241,19 +316,50 @@ export default function PropertyPage() {
   const offerModalRef = useRef<HTMLDivElement>(null)
 
   const handleOpenTourModal = () => {
-    const address = property?.address?.full || ''
-    setTourMessage(TOUR_MESSAGE_PREFIX(address))
+    const dates = getAvailableTourDates()
+    const firstDate = dates[0] ?? ''
+    const slots = getAvailableTourTimeSlots(firstDate)
+    setTourDate(firstDate)
+    setTourTime(slots[0] ?? '09:00')
     setTourMessageSent(false)
+    setTourError(null)
     setIsTourModalOpen(true)
   }
 
   const handleCloseTourModal = () => {
     setIsTourModalOpen(false)
     setTourMessageSent(false)
+    setTourError(null)
   }
 
-  const handleSendTourMessage = () => {
-    setTourMessageSent(true)
+  const handleTourDateChange = (dateString: string) => {
+    setTourDate(dateString)
+    const slots = getAvailableTourTimeSlots(dateString)
+    setTourTime(slots[0] ?? '09:00')
+  }
+
+  const handleSendTourMessage = async () => {
+    const propertyId = Array.isArray(params.id) ? params.id[0] : params.id
+    if (!propertyId || !tourDate || !tourTime) return
+    setTourError(null)
+    setTourSending(true)
+    try {
+      const response = await fetch(`/api/properties/${propertyId}/schedule-tour`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: tourDate, time: tourTime }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        setTourError(data.detail ?? 'Something went wrong. Please try again.')
+        return
+      }
+      setTourMessageSent(true)
+    } catch {
+      setTourError('Unable to send. Please try again.')
+    } finally {
+      setTourSending(false)
+    }
   }
 
   const handleOpenDisclosuresModal = () => {
@@ -1725,18 +1831,78 @@ export default function PropertyPage() {
                 </div>
               ) : (
                 <>
-                  <label htmlFor="tour-message" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Message
+                  <label id="tour-date-label" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Date (PST)
                   </label>
-                  <textarea
-                    id="tour-message"
-                    value={tourMessage}
-                    onChange={(e) => setTourMessage(e.target.value)}
-                    rows={5}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="I would like to schedule a tour for [address] at ..."
-                    aria-label="Tour request message"
-                  />
+                  <div className="w-full" role="group" aria-labelledby="tour-date-label">
+                    <div
+                      className="flex gap-2 overflow-x-auto py-1 scroll-smooth"
+                      style={{ scrollbarWidth: 'thin' }}
+                    >
+                      {getAvailableTourDates().map((d) => {
+                        const { weekday, day, month } = getTourDateCardParts(d)
+                        const isSelected = tourDate === d
+                        return (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => handleTourDateChange(d)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault()
+                                handleTourDateChange(d)
+                              }
+                            }}
+                            className={`min-w-[72px] flex-1 rounded-lg border-2 px-3 py-3 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 ${
+                              isSelected
+                                ? 'border-teal-500 bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:border-teal-400 dark:text-teal-300'
+                                : 'border-gray-200 bg-white text-gray-900 hover:border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:border-gray-500'
+                            }`}
+                            aria-label={`Select ${formatTourDateLabel(d)}`}
+                            aria-pressed={isSelected}
+                            tabIndex={0}
+                          >
+                            <span className="block text-[10px] font-medium uppercase tracking-wide opacity-90">
+                              {weekday}
+                            </span>
+                            <span className="block text-2xl font-bold leading-tight mt-0.5">
+                              {day}
+                            </span>
+                            <span className="block text-[10px] font-medium uppercase tracking-wide opacity-90 mt-0.5">
+                              {month}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                  <label htmlFor="tour-time" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mt-4 mb-2">
+                    Time (PST)
+                  </label>
+                  <select
+                    id="tour-time"
+                    value={tourTime}
+                    onChange={(e) => setTourTime(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    aria-label="Tour time"
+                  >
+                    {tourDate && getAvailableTourTimeSlots(tourDate).map((slot) => {
+                      const [h, m] = slot.split(':').map(Number)
+                      const hour12 = h % 12 || 12
+                      const ampm = h < 12 ? 'AM' : 'PM'
+                      const label = `${hour12}:${String(m).padStart(2, '0')} ${ampm}`
+                      return (
+                        <option key={slot} value={slot}>
+                          {label}
+                        </option>
+                      )
+                    })}
+                  </select>
+                  {tourError && (
+                    <p className="mt-3 text-sm text-red-600 dark:text-red-400" role="alert">
+                      {tourError}
+                    </p>
+                  )}
                 </>
               )}
             </div>
@@ -1755,16 +1921,18 @@ export default function PropertyPage() {
                     type="button"
                     onClick={handleCloseTourModal}
                     className="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    disabled={tourSending}
                   >
                     Close
                   </button>
                   <button
                     type="button"
                     onClick={handleSendTourMessage}
-                    className="px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
-                    aria-label="Send message"
+                    disabled={tourSending}
+                    className="px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Schedule tour"
                   >
-                    Send message
+                    {tourSending ? 'Sending…' : 'Schedule tour'}
                   </button>
                 </>
               )}

@@ -44,7 +44,7 @@ from services.property_transformer import transform_for_frontend, _normalize_add
 from scripts.populate_database import populate_database
 from services.r2_storage import R2Storage
 from services.image_processor import ImageProcessor
-from services.email_sender import is_email_configured, send_disclosures_email
+from services.email_sender import is_email_configured, send_disclosures_email, send_tour_request_email
 
 # In-memory image cache: {cache_key: (image_data, content_type, expires_at)}
 image_cache = {}
@@ -805,6 +805,62 @@ async def request_disclosures(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
     return {"success": True, "message": "Disclosures email sent."}
+
+
+class RequestScheduleTourBody(BaseModel):
+    date: str  # YYYY-MM-DD
+    time: str  # HH:MM (24h)
+
+
+def _format_tour_date_display(date_str: str) -> str:
+    """Format YYYY-MM-DD to e.g. 'Friday, March 14, 2025'."""
+    try:
+        from datetime import datetime
+        dt = datetime.strptime(date_str.strip(), "%Y-%m-%d")
+        return dt.strftime("%A, %B %d, %Y")
+    except ValueError:
+        return date_str
+
+
+def _format_tour_time_display(time_str: str) -> str:
+    """Format HH:MM (24h) to e.g. '2:00 PM'."""
+    try:
+        from datetime import datetime
+        dt = datetime.strptime(time_str.strip(), "%H:%M")
+        return dt.strftime("%I:%M %p").lstrip("0")  # "02:00 PM" -> "2:00 PM"
+    except ValueError:
+        return time_str
+
+
+@app.post("/api/properties/{property_id}/schedule-tour")
+async def schedule_tour(
+    property_id: str,
+    body: RequestScheduleTourBody,
+    db: Session = Depends(get_db),
+):
+    """
+    Send an email to allodeinc@gmail.com: "We would like to tour the property at {address} on {date} at {time}."
+    """
+    if not is_email_configured():
+        raise HTTPException(
+            status_code=503,
+            detail="Email is not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASSWORD, and DISCLOSURES_FROM_EMAIL in .env.",
+        )
+    property_obj = db.query(Property).filter_by(id=property_id).first()
+    if not property_obj:
+        raise HTTPException(status_code=404, detail="Property not found")
+    address = (
+        (property_obj.unparsed_address or "").strip()
+        or f"{property_obj.street_number or ''} {property_obj.street_name or ''}".strip()
+        or f"{property_obj.city or ''}, {property_obj.state_or_province or ''} {property_obj.postal_code or ''}".strip()
+    ).strip() or "this property"
+    date_display = _format_tour_date_display(body.date)
+    time_display = _format_tour_time_display(body.time)
+    try:
+        send_tour_request_email(property_address=address, date_display=date_display, time_display=time_display)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+    return {"success": True, "message": "Tour request sent."}
 
 
 @app.post("/api/properties/{property_id}/process-images")
