@@ -42,18 +42,50 @@ const OFFER_ESCALATION_OPTIONS = [
   { value: 'no', label: 'No' },
 ] as const
 
-const OfferFieldInfoButton = ({ title, ariaLabel }: { title: string; ariaLabel: string }) => (
-  <button
-    type="button"
-    title={title}
-    aria-label={ariaLabel}
-    className="inline-flex items-center justify-center w-5 h-5 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
-  >
-    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
-      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-    </svg>
-  </button>
-)
+const OfferFieldInfoButton = ({ title, ariaLabel }: { title: string; ariaLabel: string }) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handleClickOutside = (event: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isOpen])
+
+  return (
+    <div ref={wrapperRef} className="relative inline-flex">
+      <button
+        type="button"
+        title={title}
+        aria-label={ariaLabel}
+        aria-expanded={isOpen}
+        onClick={(e) => {
+          e.stopPropagation()
+          setIsOpen((prev) => !prev)
+        }}
+        className="inline-flex items-center justify-center w-5 h-5 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
+      >
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
+          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+        </svg>
+      </button>
+      {isOpen && (
+        <div
+          className="absolute left-0 top-full z-50 mt-1.5 w-64 rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-700 shadow-lg dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+          role="dialog"
+          aria-live="polite"
+        >
+          {title}
+        </div>
+      )}
+    </div>
+  )
+}
 
 const formatCurrencyInput = (raw: string): string => {
   const digits = raw.replace(/\D/g, '')
@@ -65,12 +97,17 @@ const formatCurrencyInput = (raw: string): string => {
 
 type ContingencyId = string
 const OFFER_CONTINGENCIES: { id: ContingencyId; label: string; description: string }[] = [
+  { id: 'title', label: 'Title', description: 'You can back out if title issues or liens are discovered.' },
   { id: 'inspection', label: 'Inspection', description: 'Allows you to conduct inspections and request repairs or back out based on findings.' },
   { id: 'financing', label: 'Financing', description: 'Offer depends on obtaining a mortgage; if financing falls through, you can exit the contract.' },
   { id: 'appraisal', label: 'Appraisal', description: 'If the property appraises below the sale price, you can renegotiate or withdraw.' },
-  { id: 'sale-of-home', label: 'Sale of home', description: "Your purchase depends on selling your current home by a specified date." },
-  { id: 'title', label: 'Title', description: 'You can back out if title issues or liens are discovered.' },
-  { id: 'hoa', label: 'HOA / Document review', description: 'Time to review HOA documents, rules, financials, and covenants.' },
+  { id: 'sale-of-home', label: 'Sale of Home', description: "Your purchase depends on selling your current home by a specified date." },
+  { id: 'lead-based-paint', label: 'Lead Based Paint', description: 'Time to review lead-based paint disclosures and, if applicable, conduct an evaluation for pre-1978 homes.' },
+  { id: 'neighborhood-review', label: 'Neighborhood Review', description: 'Time to review the neighborhood, schools, and area before committing to the purchase.' },
+  { id: 'well', label: 'Well', description: 'Contingent on well flow, water quality, or well inspection meeting your requirements.' },
+  { id: 'septic', label: 'Septic', description: 'Contingent on septic inspection or certification meeting your requirements.' },
+  { id: 'survey', label: 'Survey', description: 'Purchase is contingent on receiving an acceptable property survey showing boundaries and improvements.' },
+  { id: 'feasibility', label: 'Feasibility', description: 'Time to complete feasibility studies (e.g., development, zoning, or use) before closing.' },
 ]
 
 const TOUR_PST = 'America/Los_Angeles'
@@ -380,6 +417,7 @@ export default function PropertyPage() {
   const [offerMessageSent, setOfferMessageSent] = useState(false)
   const [offerSending, setOfferSending] = useState(false)
   const [offerError, setOfferError] = useState<string | null>(null)
+  const [offerFieldErrors, setOfferFieldErrors] = useState<Record<string, string>>({})
   // Step 1
   const [offerFirstName, setOfferFirstName] = useState('')
   const [offerLastName, setOfferLastName] = useState('')
@@ -453,7 +491,7 @@ export default function PropertyPage() {
         setTourError(data.detail ?? 'Something went wrong. Please try again.')
         return
       }
-      setTourMessageSent(true)
+    setTourMessageSent(true)
     } catch {
       setTourError('Unable to send. Please try again.')
     } finally {
@@ -542,6 +580,7 @@ export default function PropertyPage() {
     setOfferCoBuyerEmail('')
     setOfferCoBuyerPhone('')
     setOfferEntityName('')
+    setOfferFieldErrors({})
     setIsOfferModalOpen(true)
   }
 
@@ -549,6 +588,7 @@ export default function PropertyPage() {
     setIsOfferModalOpen(false)
     setOfferMessageSent(false)
     setOfferError(null)
+    setOfferFieldErrors({})
   }
 
   const handleOfferContingencyToggle = (id: ContingencyId) => {
@@ -561,123 +601,72 @@ export default function PropertyPage() {
   const isOfferStatusEntity = OFFER_STATUS_ENTITY_VALUES.includes(offerStatus as (typeof OFFER_STATUS_ENTITY_VALUES)[number])
 
   const validateOfferStep1 = (): boolean => {
+    const errors: Record<string, string> = {}
     const email = offerEmail.trim()
-    if (!offerStatus) {
-      setOfferError('Please select your status.')
-      return false
-    }
+    if (!offerStatus) errors.status = 'Please select your status.'
     if (isOfferStatusPerson) {
-      if (!offerFirstName.trim()) {
-        setOfferError('Please enter your first name.')
-        return false
-      }
-      if (!offerLastName.trim()) {
-        setOfferError('Please enter your last name.')
-        return false
-      }
+      if (!offerFirstName.trim()) errors.first_name = 'Please enter your first name.'
+      if (!offerLastName.trim()) errors.last_name = 'Please enter your last name.'
     }
     if (isOfferStatusEntity) {
-      if (!offerEntityName.trim()) {
-        setOfferError('Please enter the entity name.')
-        return false
-      }
+      if (!offerEntityName.trim()) errors.entity_name = 'Please enter the entity name.'
     }
-    if (!email || !email.includes('@')) {
-      setOfferError('Please enter a valid email address.')
-      return false
-    }
-    if (!offerPhone.trim()) {
-      setOfferError('Please enter your phone number.')
-      return false
-    }
+    if (!email || !email.includes('@')) errors.email = 'Please enter a valid email address.'
+    if (!offerPhone.trim()) errors.phone = 'Please enter your phone number.'
     if (offerHasCoBuyer) {
-      if (!offerCoBuyerFirstName.trim()) {
-        setOfferError('Please enter the co-buyer\'s first name.')
-        return false
-      }
-      if (!offerCoBuyerLastName.trim()) {
-        setOfferError('Please enter the co-buyer\'s last name.')
-        return false
-      }
-      if (!offerCoBuyerEmail.trim() || !offerCoBuyerEmail.includes('@')) {
-        setOfferError('Please enter a valid email address for the co-buyer.')
-        return false
-      }
-      if (!offerCoBuyerPhone.trim()) {
-        setOfferError('Please enter the co-buyer\'s phone number.')
-        return false
-      }
+      if (!offerCoBuyerFirstName.trim()) errors.co_buyer_first_name = 'Please enter the co-buyer\'s first name.'
+      if (!offerCoBuyerLastName.trim()) errors.co_buyer_last_name = 'Please enter the co-buyer\'s last name.'
+      if (!offerCoBuyerEmail.trim() || !offerCoBuyerEmail.includes('@')) errors.co_buyer_email = 'Please enter a valid email address for the co-buyer.'
+      if (!offerCoBuyerPhone.trim()) errors.co_buyer_phone = 'Please enter the co-buyer\'s phone number.'
     }
-    setOfferError(null)
-    return true
+    setOfferFieldErrors(errors)
+    return Object.keys(errors).length === 0
   }
 
   const validateOfferStep2 = (): boolean => {
-    if (!offerPurchasePrice.trim()) {
-      setOfferError('Please enter the purchase price.')
-      return false
+    const errors: Record<string, string> = {}
+    if (!offerPurchasePrice.trim()) errors.purchase_price = 'Please enter the purchase price.'
+    else {
+      const price = Number(offerPurchasePrice.replace(/\D/g, ''))
+      if (!Number.isFinite(price) || price <= 0) errors.purchase_price = 'Please enter a valid purchase price.'
     }
-    const price = Number(offerPurchasePrice.replace(/\D/g, ''))
-    if (!Number.isFinite(price) || price <= 0) {
-      setOfferError('Please enter a valid purchase price.')
-      return false
+    if (!offerEarnestMoney.trim()) errors.earnest_money = 'Please enter the earnest money deposit.'
+    else {
+      const earnestNum = Number(offerEarnestMoney.replace(/\D/g, ''))
+      if (!Number.isFinite(earnestNum) || earnestNum <= 0) errors.earnest_money = 'Please enter a valid earnest money deposit.'
     }
-    if (!offerEarnestMoney.trim()) {
-      setOfferError('Please enter the earnest money deposit.')
-      return false
-    }
-    const earnestNum = Number(offerEarnestMoney.replace(/\D/g, ''))
-    if (!Number.isFinite(earnestNum) || earnestNum <= 0) {
-      setOfferError('Please enter a valid earnest money deposit.')
-      return false
-    }
-    if (!offerEscalationClause) {
-      setOfferError('Please select whether you have an escalation clause.')
-      return false
-    }
+    if (!offerEscalationClause) errors.escalation_clause = 'Please select whether you have an escalation clause.'
     if (offerEscalationClause === 'yes') {
-      if (!offerEscalationAmount.trim()) {
-        setOfferError('Please enter the escalation amount.')
-        return false
+      if (!offerEscalationAmount.trim()) errors.escalation_amount = 'Please enter the escalation amount.'
+      else {
+        const escalationNum = Number(offerEscalationAmount.replace(/\D/g, ''))
+        if (!Number.isFinite(escalationNum) || escalationNum <= 0) errors.escalation_amount = 'Please enter a valid escalation amount.'
       }
-      const escalationNum = Number(offerEscalationAmount.replace(/\D/g, ''))
-      if (!Number.isFinite(escalationNum) || escalationNum <= 0) {
-        setOfferError('Please enter a valid escalation amount.')
-        return false
-      }
-      if (!offerMaxPurchasePrice.trim()) {
-        setOfferError('Please enter the maximum purchase price.')
-        return false
-      }
-      const maxPriceNum = Number(offerMaxPurchasePrice.replace(/\D/g, ''))
-      if (!Number.isFinite(maxPriceNum) || maxPriceNum <= 0) {
-        setOfferError('Please enter a valid maximum purchase price.')
-        return false
+      if (!offerMaxPurchasePrice.trim()) errors.max_purchase_price = 'Please enter the maximum purchase price.'
+      else {
+        const maxPriceNum = Number(offerMaxPurchasePrice.replace(/\D/g, ''))
+        if (!Number.isFinite(maxPriceNum) || maxPriceNum <= 0) errors.max_purchase_price = 'Please enter a valid maximum purchase price.'
       }
     }
-    if (!offerExpiration.trim()) {
-      setOfferError('Please select the offer expiration date.')
-      return false
-    }
-    if (!offerClosingDate.trim()) {
-      setOfferError('Please select the closing date.')
-      return false
-    }
-    setOfferError(null)
-    return true
+    if (!offerExpiration.trim()) errors.offer_expiration = 'Please select the offer expiration date.'
+    if (!offerClosingDate.trim()) errors.closing_date = 'Please select the closing date.'
+    setOfferFieldErrors(errors)
+    return Object.keys(errors).length === 0
   }
 
   const handleOfferNext = () => {
     if (offerStep === 1 && !validateOfferStep1()) return
     if (offerStep === 2 && !validateOfferStep2()) return
-    setOfferError(null)
+    setOfferFieldErrors({})
     setOfferStep((s) => Math.min(4, s + 1))
   }
 
   const handleOfferBack = () => {
-    setOfferError(null)
+    setOfferFieldErrors({})
     setOfferStep((s) => Math.max(1, s - 1))
   }
+
+  const offerFieldErrorClass = 'mt-1 text-sm text-red-600 dark:text-red-400'
 
   const handleSubmitOffer = async () => {
     const propertyId = Array.isArray(params.id) ? params.id[0] : params.id
@@ -727,7 +716,7 @@ export default function PropertyPage() {
         setOfferError(data.detail ?? 'Something went wrong. Please try again.')
         return
       }
-      setOfferMessageSent(true)
+    setOfferMessageSent(true)
     } catch {
       setOfferError('Unable to send. Please try again.')
     } finally {
@@ -2396,23 +2385,23 @@ export default function PropertyPage() {
               </button>
             </div>
 
-            {offerMessageSent ? (
-              <div
+              {offerMessageSent ? (
+                <div
                 className="flex flex-col items-center justify-center py-12 text-center px-4"
-                role="status"
-                aria-live="polite"
-              >
-                <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
-                  <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <p className="text-lg font-medium text-gray-900 dark:text-white mb-1">
+                  role="status"
+                  aria-live="polite"
+                >
+                  <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
+                    <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <p className="text-lg font-medium text-gray-900 dark:text-white mb-1">
                   Offer submitted
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  We&apos;ll be in touch soon regarding your offer.
-                </p>
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    We&apos;ll be in touch soon regarding your offer.
+                  </p>
                 <div className="mt-6">
                   <button
                     type="button"
@@ -2422,9 +2411,9 @@ export default function PropertyPage() {
                     Close
                   </button>
                 </div>
-              </div>
-            ) : (
-              <>
+                </div>
+              ) : (
+                <>
                 {/* Step indicator */}
                 <div className="flex items-center justify-center gap-2 px-4 pt-4 flex-shrink-0" aria-label={`Step ${offerStep} of 4`}>
                   {[1, 2, 3, 4].map((step) => (
@@ -2469,13 +2458,22 @@ export default function PropertyPage() {
                             </option>
                           ))}
                         </select>
+                        {offerFieldErrors.status && (
+                          <p className={offerFieldErrorClass} role="alert">{offerFieldErrors.status}</p>
+                        )}
                       </div>
                       {isOfferStatusPerson && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
-                            <label htmlFor="offer-first-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                              First Name
-                            </label>
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <label htmlFor="offer-first-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                First Name
+                              </label>
+                              <OfferFieldInfoButton
+                                title="Please use your legal name as seen on your driver's license or government issued id."
+                                ariaLabel="More information about first name"
+                              />
+                            </div>
                             <input
                               id="offer-first-name"
                               type="text"
@@ -2486,11 +2484,20 @@ export default function PropertyPage() {
                               aria-required="true"
                               autoComplete="given-name"
                             />
+                            {offerFieldErrors.first_name && (
+                              <p className={offerFieldErrorClass} role="alert">{offerFieldErrors.first_name}</p>
+                            )}
                           </div>
                           <div>
-                            <label htmlFor="offer-last-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                              Last Name
-                            </label>
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <label htmlFor="offer-last-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Last Name
+                              </label>
+                              <OfferFieldInfoButton
+                                title="Please use your legal name as seen on your driver's license or government issued id."
+                                ariaLabel="More information about last name"
+                              />
+                            </div>
                             <input
                               id="offer-last-name"
                               type="text"
@@ -2501,6 +2508,9 @@ export default function PropertyPage() {
                               aria-required="true"
                               autoComplete="family-name"
                             />
+                            {offerFieldErrors.last_name && (
+                              <p className={offerFieldErrorClass} role="alert">{offerFieldErrors.last_name}</p>
+                            )}
                           </div>
                         </div>
                       )}
@@ -2519,6 +2529,9 @@ export default function PropertyPage() {
                             aria-required="true"
                             autoComplete="off"
                           />
+                          {offerFieldErrors.entity_name && (
+                            <p className={offerFieldErrorClass} role="alert">{offerFieldErrors.entity_name}</p>
+                          )}
                         </div>
                       )}
                       <div>
@@ -2535,6 +2548,9 @@ export default function PropertyPage() {
                           aria-required="true"
                           autoComplete="email"
                         />
+                        {offerFieldErrors.email && (
+                          <p className={offerFieldErrorClass} role="alert">{offerFieldErrors.email}</p>
+                        )}
                       </div>
                       <div>
                         <label htmlFor="offer-phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -2550,6 +2566,9 @@ export default function PropertyPage() {
                           aria-required="true"
                           autoComplete="tel"
                         />
+                        {offerFieldErrors.phone && (
+                          <p className={offerFieldErrorClass} role="alert">{offerFieldErrors.phone}</p>
+                        )}
                       </div>
 
                       {/* Co-buyer optional section - only for person statuses */}
@@ -2586,6 +2605,9 @@ export default function PropertyPage() {
                                   placeholder="First name"
                                   autoComplete="off"
                                 />
+                                {offerFieldErrors.co_buyer_first_name && (
+                                  <p className={offerFieldErrorClass} role="alert">{offerFieldErrors.co_buyer_first_name}</p>
+                                )}
                               </div>
                               <div>
                                 <label htmlFor="offer-cobuyer-last-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -2600,6 +2622,9 @@ export default function PropertyPage() {
                                   placeholder="Last name"
                                   autoComplete="off"
                                 />
+                                {offerFieldErrors.co_buyer_last_name && (
+                                  <p className={offerFieldErrorClass} role="alert">{offerFieldErrors.co_buyer_last_name}</p>
+                                )}
                               </div>
                             </div>
                             <div>
@@ -2615,6 +2640,9 @@ export default function PropertyPage() {
                                 placeholder="co-buyer@example.com"
                                 autoComplete="off"
                               />
+                              {offerFieldErrors.co_buyer_email && (
+                                <p className={offerFieldErrorClass} role="alert">{offerFieldErrors.co_buyer_email}</p>
+                              )}
                             </div>
                             <div>
                               <label htmlFor="offer-cobuyer-phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -2629,6 +2657,9 @@ export default function PropertyPage() {
                                 placeholder="(555) 123-4567"
                                 autoComplete="off"
                               />
+                              {offerFieldErrors.co_buyer_phone && (
+                                <p className={offerFieldErrorClass} role="alert">{offerFieldErrors.co_buyer_phone}</p>
+                              )}
                             </div>
                           </div>
                         )}
@@ -2654,12 +2685,15 @@ export default function PropertyPage() {
                           placeholder="$1,000,000"
                           aria-required="true"
                         />
+                        {offerFieldErrors.purchase_price && (
+                          <p className={offerFieldErrorClass} role="alert">{offerFieldErrors.purchase_price}</p>
+                        )}
                       </div>
                       <div>
                         <label htmlFor="offer-price-reasoning" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Reasoning behind purchase price <span className="text-gray-500 dark:text-gray-400 font-normal">(optional)</span>
-                        </label>
-                        <textarea
+                  </label>
+                  <textarea
                           id="offer-price-reasoning"
                           value={offerPurchasePriceReasoning}
                           onChange={(e) => setOfferPurchasePriceReasoning(e.target.value)}
@@ -2674,7 +2708,7 @@ export default function PropertyPage() {
                             Earnest Money Deposit
                           </label>
                           <OfferFieldInfoButton
-                            title="Good-faith deposit held in escrow until closing. Shows the seller you are a serious buyer."
+                            title="Good-faith deposit (usually 3-5%) held in escrow until closing. Shows the seller you are a serious buyer."
                             ariaLabel="More information about earnest money deposit"
                           />
                         </div>
@@ -2693,7 +2727,11 @@ export default function PropertyPage() {
                             <input
                               type="checkbox"
                               checked={offerEarnestMoneyNonRefundable}
-                              onChange={(e) => setOfferEarnestMoneyNonRefundable(e.target.checked)}
+                              onChange={(e) => {
+                                const checked = e.target.checked
+                                setOfferEarnestMoneyNonRefundable(checked)
+                                if (checked) setOfferContingencies([])
+                              }}
                               className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                               aria-label="Make earnest money non-refundable"
                             />
@@ -2706,6 +2744,9 @@ export default function PropertyPage() {
                             ariaLabel="More information about non-refundable earnest money"
                           />
                         </div>
+                        {offerFieldErrors.earnest_money && (
+                          <p className={offerFieldErrorClass} role="alert">{offerFieldErrors.earnest_money}</p>
+                        )}
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5 mb-1">
@@ -2713,7 +2754,7 @@ export default function PropertyPage() {
                             Escalation Clause
                           </label>
                           <OfferFieldInfoButton
-                            title="Allows your offer to automatically increase above competing offers by a set amount, up to a maximum price you specify."
+                            title="In a competitive market, this allows your offer to automatically increase above competing offers by a set amount, up to a maximum price you specify. The listing agent shall provide proof of highest competing offer."
                             ariaLabel="More information about escalation clause"
                           />
                         </div>
@@ -2737,6 +2778,9 @@ export default function PropertyPage() {
                             </option>
                           ))}
                         </select>
+                        {offerFieldErrors.escalation_clause && (
+                          <p className={offerFieldErrorClass} role="alert">{offerFieldErrors.escalation_clause}</p>
+                        )}
                         {offerEscalationClause === 'yes' && (
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                             <div>
@@ -2759,6 +2803,9 @@ export default function PropertyPage() {
                                 placeholder="$5,000"
                                 aria-required="true"
                               />
+                              {offerFieldErrors.escalation_amount && (
+                                <p className={offerFieldErrorClass} role="alert">{offerFieldErrors.escalation_amount}</p>
+                              )}
                             </div>
                             <div>
                               <div className="flex items-center gap-1.5 mb-1">
@@ -2780,6 +2827,9 @@ export default function PropertyPage() {
                                 placeholder="$550,000"
                                 aria-required="true"
                               />
+                              {offerFieldErrors.max_purchase_price && (
+                                <p className={offerFieldErrorClass} role="alert">{offerFieldErrors.max_purchase_price}</p>
+                              )}
                             </div>
                           </div>
                         )}
@@ -2804,6 +2854,9 @@ export default function PropertyPage() {
                             className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             aria-required="true"
                           />
+                          {offerFieldErrors.offer_expiration && (
+                            <p className={offerFieldErrorClass} role="alert">{offerFieldErrors.offer_expiration}</p>
+                          )}
                         </div>
                         <div>
                           <div className="flex items-center gap-1.5 mb-1">
@@ -2824,6 +2877,9 @@ export default function PropertyPage() {
                             className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             aria-required="true"
                           />
+                          {offerFieldErrors.closing_date && (
+                            <p className={offerFieldErrorClass} role="alert">{offerFieldErrors.closing_date}</p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -2832,30 +2888,37 @@ export default function PropertyPage() {
                   {offerStep === 3 && (
                     <div className="space-y-4">
                       <h3 className="text-base font-medium text-gray-900 dark:text-white">Contingencies</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Select any contingencies that apply to your offer. You can select multiple.
-                      </p>
-                      <div className="space-y-3">
+                      {offerEarnestMoneyNonRefundable ? (
+                        <p className="text-sm text-amber-700 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                          Contingencies are not allowed if the earnest money is non-refundable.
+                        </p>
+                      ) : (
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Select any contingencies that apply to your offer. You can select multiple.
+                        </p>
+                      )}
+                      <div className={`space-y-3 ${offerEarnestMoneyNonRefundable ? 'pointer-events-none opacity-60' : ''}`}>
                         {OFFER_CONTINGENCIES.map((c) => {
                           const isSelected = offerContingencies.includes(c.id)
                           return (
                             <div
                               key={c.id}
-                              className={`rounded-lg border-2 p-4 transition-colors cursor-pointer ${
-                                isSelected
-                                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
-                                  : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
-                              }`}
-                              onClick={() => handleOfferContingencyToggle(c.id)}
+                              className={`rounded-lg border-2 p-4 transition-colors ${offerEarnestMoneyNonRefundable ? 'cursor-not-allowed bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600' : `cursor-pointer ${isSelected
+                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
+                                : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                              }`}`}
+                              onClick={() => !offerEarnestMoneyNonRefundable && handleOfferContingencyToggle(c.id)}
                               onKeyDown={(e) => {
+                                if (offerEarnestMoneyNonRefundable) return
                                 if (e.key === 'Enter' || e.key === ' ') {
                                   e.preventDefault()
                                   handleOfferContingencyToggle(c.id)
                                 }
                               }}
                               role="button"
-                              tabIndex={0}
+                              tabIndex={offerEarnestMoneyNonRefundable ? -1 : 0}
                               aria-pressed={isSelected}
+                              aria-disabled={offerEarnestMoneyNonRefundable}
                               aria-label={`${c.label}: ${c.description}`}
                             >
                               <div className="flex items-start gap-3">
@@ -2893,7 +2956,7 @@ export default function PropertyPage() {
                         id="offer-special-requests"
                         value={offerSpecialRequests}
                         onChange={(e) => setOfferSpecialRequests(e.target.value)}
-                        rows={5}
+                    rows={5}
                         className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="e.g. include appliances, preferred closing timeline, questions for the seller…"
                         aria-label="Special requests"
@@ -2905,37 +2968,37 @@ export default function PropertyPage() {
                     <p className="mt-3 text-sm text-red-600 dark:text-red-400" role="alert">
                       {offerError}
                     </p>
-                  )}
-                </div>
+              )}
+            </div>
 
                 <div className="flex justify-between gap-2 p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
                   <div className="flex gap-2">
                     {offerStep > 1 ? (
-                      <button
-                        type="button"
+                <button
+                  type="button"
                         onClick={handleOfferBack}
                         className="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                      >
+                >
                         Back
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleCloseOfferModal}
-                        className="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        Close
-                      </button>
+                </button>
+              ) : (
+                  <button
+                    type="button"
+                    onClick={handleCloseOfferModal}
+                    className="px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Close
+                  </button>
                     )}
                   </div>
                   {offerStep < 4 ? (
-                    <button
-                      type="button"
+                  <button
+                    type="button"
                       onClick={handleOfferNext}
-                      className="px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
-                    >
+                    className="px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+                  >
                       Next
-                    </button>
+                  </button>
                   ) : (
                     <button
                       type="button"
@@ -2948,8 +3011,8 @@ export default function PropertyPage() {
                     </button>
                   )}
                 </div>
-              </>
-            )}
+                </>
+              )}
           </div>
         </div>
       )}

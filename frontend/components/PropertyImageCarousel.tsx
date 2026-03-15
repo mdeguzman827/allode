@@ -74,10 +74,6 @@ export default function PropertyImageCarousel({
     setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))
   }
 
-  const handleThumbnailClick = (index: number) => {
-    setCurrentIndex(index)
-  }
-
   // Reset current index when images change
   useEffect(() => {
     if (currentIndex >= filteredImages.length && filteredImages.length > 0) {
@@ -355,43 +351,6 @@ export default function PropertyImageCarousel({
                 </div>
               )}
             </div>
-
-            {/* Thumbnail Strip */}
-            {filteredImages.length > 1 && (
-              <div className="mt-4 flex gap-2 overflow-x-auto pb-2 justify-center">
-                {filteredImages.map((image, index) => (
-                  <button
-                    key={index}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleThumbnailClick(index)
-                    }}
-                    className={`flex-shrink-0 relative w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
-                      index === currentIndex
-                        ? 'border-blue-400 ring-2 ring-blue-200'
-                        : 'border-transparent hover:border-gray-400'
-                    }`}
-                    aria-label={`View image ${index + 1}`}
-                  >
-                    <Image
-                      src={image.url}
-                      alt={`Thumbnail ${index + 1}`}
-                      fill
-                      className="object-cover"
-                      sizes="80px"
-                      loading="lazy"
-                      unoptimized={true}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement
-                        target.style.display = 'none'
-                        e.preventDefault()
-                        e.stopPropagation()
-                      }}
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
         </div>
       )}
